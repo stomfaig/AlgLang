@@ -44,3 +44,9 @@ ninja
 
 The frontend flag controls whether the build file created will also compile the interpreter. Without it only the MLIR dialect is compiled.
 
+### Roadmap
+
+- [x] Implement a basic MLIR dialect, and set up compilation environment
+- [x] Set up a basic parser for `AlgLang`
+- [ ] Set up compilation from AST to MLIR dialect
+- [ ] Implement type checking and type inference
