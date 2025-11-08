@@ -34,6 +34,18 @@ public:
     const std::string &getName() const { return Name; }
 };
 
+class AssignAST : public ExprAST {
+    std::unique_ptr<VariableExprAST> LHS;
+    std::unique_ptr<ExprAST> RHS;
+
+public:
+    AssignAST(std::unique_ptr<VariableExprAST> LHS, std::unique_ptr<ExprAST> RHS): LHS(std::move(LHS)), RHS(std::move(RHS)) {}
+    void dump(std::ostream &os = std::cout, unsigned indent = 0) const override;
+    const VariableExprAST &getLHS() const {return *LHS; }
+    const ExprAST &getRHS() const {return *RHS; }
+
+}
+
 
 class BinaryOpAST : public ExprAST {
     char Op;
@@ -41,7 +53,6 @@ class BinaryOpAST : public ExprAST {
 
 public:
     BinaryOpAST(char Op, std::unique_ptr<ExprAST> LHS, std::unique_ptr<ExprAST> RHS): Op(Op), LHS(std::move(LHS)), RHS(std::move(RHS)) {}
-
     void dump(std::ostream &os = std::cout, unsigned indent = 0) const override;
     char getOp() const { return Op; }
     const ExprAST &getLHS() const { return *LHS; }
@@ -57,6 +68,7 @@ public:
 
     void dump(std::ostream &os = std::cout, unsigned indent = 0) const override;
     const std::string &getName() { return Name; }
+    const std::vector<std::string> &getGenerators() const { return Generators; }
 };
 
 class GroupAST : public ExprAST {
