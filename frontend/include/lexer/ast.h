@@ -44,6 +44,8 @@ public:
 
     void dump(std::ostream &os = std::cout, unsigned indent = 0) const override;
     char getOp() const { return Op; }
+    const ExprAST &getLHS() const { return *LHS; }
+    const ExprAST &getRHS() const { return *RHS; }
 };
 
 class GroupPrototypeAST : public ExprAST {
