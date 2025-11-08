@@ -20,6 +20,7 @@ public:
     NumberExprAST(double Val) : Val(Val) {}
 
     void dump(std::ostream &os = std::cout, unsigned indent = 0) const override;
+    double getVal() const { return Val; }
 };
 
 
@@ -30,6 +31,7 @@ public:
     VariableExprAST(const std::string &Name) : Name(Name) {}
 
     void dump(std::ostream &os = std::cout, unsigned indent = 0) const override;
+    const std::string &getName() const { return Name; }
 };
 
 
@@ -41,6 +43,7 @@ public:
     BinaryOpAST(char Op, std::unique_ptr<ExprAST> LHS, std::unique_ptr<ExprAST> RHS): Op(Op), LHS(std::move(LHS)), RHS(std::move(RHS)) {}
 
     void dump(std::ostream &os = std::cout, unsigned indent = 0) const override;
+    char getOp() const { return Op; }
 };
 
 class GroupPrototypeAST : public ExprAST {
@@ -51,6 +54,7 @@ public:
     GroupPrototypeAST(const std::string &Name, std::vector<std::string> Generators): Name(Name), Generators(std::move(Generators)) {}
 
     void dump(std::ostream &os = std::cout, unsigned indent = 0) const override;
+    const std::string &getName() { return Name; }
 };
 
 class GroupAST : public ExprAST {
@@ -61,6 +65,8 @@ public:
     GroupAST(std::unique_ptr<GroupPrototypeAST> Proto, std::vector<std::unique_ptr<ExprAST>> Rules): Proto(std::move(Proto)), Rules(std::move(Rules)) {}
 
     void dump(std::ostream &os = std::cerr, unsigned indent = 0) const override;
+    const GroupPrototypeAST &getProto() const { return *Proto; }
+    const std::vector<std::unique_ptr<ExprAST>> &getRules() const { return Rules; }
 };
 
 #endif // FRONTEND_ASH_H
