@@ -18,6 +18,12 @@ void VariableExprAST::dump(std::ostream &os, unsigned indent) const {
     os << std::string(indent, ' ') << "VariableExpr(" << Name << ")\n";
 }
 
+void AssignAST::dump(std::ostream &os, unsigned indent) const {
+    os << std::string(indent, ' ') << "Assign\n";
+    if (LHS) LHS->dump(os, indent + 2);
+    if (RHS) RHS->dump(os, indent + 2);
+}
+
 void BinaryOpAST::dump(std::ostream &os, unsigned indent) const {
     os << std::string(indent, ' ') << "BinaryOp(" << Op << ")\n";
     if (LHS) LHS->dump(os, indent + 2);
