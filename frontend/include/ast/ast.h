@@ -43,8 +43,7 @@ public:
     void dump(std::ostream &os = std::cout, unsigned indent = 0) const override;
     const VariableExprAST &getLHS() const {return *LHS; }
     const ExprAST &getRHS() const {return *RHS; }
-
-}
+};
 
 
 class BinaryOpAST : public ExprAST {
@@ -67,7 +66,7 @@ public:
     GroupPrototypeAST(const std::string &Name, std::vector<std::string> Generators): Name(Name), Generators(std::move(Generators)) {}
 
     void dump(std::ostream &os = std::cout, unsigned indent = 0) const override;
-    const std::string &getName() { return Name; }
+    const std::string &getName() const { return Name; }
     const std::vector<std::string> &getGenerators() const { return Generators; }
 };
 

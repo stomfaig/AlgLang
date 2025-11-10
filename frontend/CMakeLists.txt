@@ -7,8 +7,7 @@ target_sources(Compiler
 
 target_link_libraries(Compiler
     PRIVATE
-        MLIRAlg
-        Lexer
+        Parser
 )
 
 add_subdirectory(lib)

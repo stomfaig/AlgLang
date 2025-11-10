@@ -1,8 +1,10 @@
 include "mlir/IR/OpBase.td"
+include "mlir/IR/AttrTypeBase.td"
+include "mlir/IR/BuiltinTypes.td"
+include "mlir/IR/BuiltinAttributes.td"
+include "mlir/IR/BuiltinAttributeInterfaces.td"
 include "mlir/Interfaces/InferTypeOpInterface.td"
 include "mlir/Interfaces/SideEffectInterfaces.td"
-include "mlir/IR/BuiltinTypes.td"
-include "mlir/IR/AttrTypeBase.td"
 
 def Alg_Dialect : Dialect {
     let name = "alg";
@@ -13,57 +15,73 @@ def Alg_Dialect : Dialect {
     let extraClassDeclaration = [{
         void registerTypes();
     }];
+
+    let useDefaultTypePrinterParser = 1;
+    let useDefaultAttributePrinterParser = 1;
 }
+
+class Alg_Op<string mnemonic, list<NativeOpTrait> traits = []> : Op<Alg_Dialect, mnemonic, traits>;
 
 class Alg_Type<string name, string typeMnemonic, list<Trait> traits = []> : TypeDef<Alg_Dialect, name, traits> {
     let mnemonic = typeMnemonic;
 }
 
-def Alg_Group : Alg_Type<"Group", "grp"> {
+class Alg_Attr<string name, string typeMnemonic, list<Trait> traits = []> : AttrDef<Alg_Dialect, name, traits> {
+    let mnemonic = typeMnemonic;
+} 
+
+def Alg_GroupAttr : Alg_Attr<"Group", "grp"> {
     let summary="Algebraic group type.";
     let description = [{
         Represents an abstract algebraic group. 
         May optionally carry parameters, e.g., group name or dimension.
     }];
 
-    let parameters = (ins OptionalParameter<"StringAttr">:$name);
+    let parameters = (ins "StringAttr":$name);
 
     let assemblyFormat = "`<` $name `>`";
 }
 
-def Alg_Element : Alg_Type<"Element", "elt"> {
-    let summary = "An element of a specific group";
-
+def Alg_Element : Alg_Type<"Element", "elem"> {
+    let summary = "An element of a group";
     let description = [{
-        Represents an element belonging to a specific Alg_Group.
+        Represents an element of an algebraic group, by persisting
+        the group the element belongs to, and a representation in
+        in terms of the generators.
     }];
 
-    let parameters = (ins TypeParameter<"GroupType", "grp">:$group);
+    let parameters = (ins
+        Alg_GroupAttr:$group,
+        Builtin_Vector:$repr
+    );
 
-    let assemblyFormat = "`<` $group `>`";
+    let assemblyFormat = "`<` $group `:` $repr `>`";
 }
 
-// This simply specifies a new `Op` class, that inherits from Op.
-class Alg_Op<string mnemonic, list<NativeOpTrait> traits = []> : Op<Alg_Dialect, mnemonic, traits>;
+def ElementCreateOp : Alg_Op<"element.create"> {
+    let arguments = (ins
+        ArrayAttr:$data,
+        Alg_GroupAttr:$group
+    );
 
-// Now, we simply define an instance of the class we have just created, with no traits.
-def IdentityOp : Alg_Op<"id"> {
-    let summary = "Return the identity of a group.";
-
-    let description = [{
-        Obtain the identity of a group.
-    }];
+    let results = (outs
+        Alg_Element:$elem
+    );
 }
 
-def CompositionOp : Alg_Op<"composition"> {
-    let summary = "Combine two elements of a group.";
+def AddOp : Alg_Op<"add"> {
+    let summary = "add";
 
     let description = [{
-        Describes the combination of to Alg_Element objects.
+        Adds two elements of the same group.
     }];
 
     let arguments = (ins
-        Alg_Element:$elt1,
-        Alg_Element:$elt2
+        Alg_Element:$elem1,
+        Alg_Element:$elem2
+    );
+
+    let results = (outs
+        Alg_Element:$result
     );
 }

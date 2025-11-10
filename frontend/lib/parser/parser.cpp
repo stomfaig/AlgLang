@@ -5,8 +5,11 @@
 #include <iostream>
 #include <map>
 
+#include "mlir/IR/MLIRContext.h"
+
 #include "ast.h"
 #include "parser.h"
+#include "mlirgen.h"
 
 static std::string IdentifierStr;
 static double NumVal;
@@ -72,7 +75,8 @@ static int gettok() {
         // NB. The tutorial does not include the `.. = getchar();` call, which seems a bit silly.
         if (LastChar != EOF)
             LastChar = getchar();
-            return gettok();
+        
+        return gettok();
     }
 
     // If none of the above matched, we either found EOF or a random char.
@@ -109,7 +113,7 @@ static std::unique_ptr<ExprAST> ParseParenExpr() {
     return expr;
 }
 
-static std::unique_ptr<ExprAST> ParseIdentifierExpr() {
+static std::unique_ptr<VariableExprAST> ParseIdentifierExpr() {
     std::string IdentifierName = IdentifierStr;
     getNextToken();
     return std::make_unique<VariableExprAST>(IdentifierName);
@@ -119,7 +123,7 @@ static std::unique_ptr<ExprAST> ParseIdentifierExpr() {
 static std::unique_ptr<ExprAST> ParseNumberExpr() {
     std::unique_ptr<ExprAST> result = std::make_unique<NumberExprAST>(NumVal);
     getNextToken();
-    return std::move(result);
+    return result;
 }
 
 static std::unique_ptr<ExprAST> ParsePrimary() {
@@ -249,7 +253,7 @@ static std::unique_ptr<GroupAST> ParseGroup() {
 
 static std::unique_ptr<ExprAST> ParseAssign() {
 
-    auto LHS = ParseExpression();
+    std::unique_ptr<VariableExprAST> LHS = ParseIdentifierExpr();
 
     if (CurrentToken != '=') {
         fprintf(stderr, "Currently only group definitions and assignments are supported.");
@@ -265,13 +269,18 @@ static std::unique_ptr<ExprAST> ParseAssign() {
         return nullptr;
     }
 
-    return std::make_unique<BinaryOpAST>('=', std::move(LHS), std::move(RHS));
+    return std::make_unique<AssignAST>(std::move(LHS), std::move(RHS));
 }
 
 int run() {
     BinopPrecedence['+'] = 10;
     BinopPrecedence['-'] = 10;
     BinopPrecedence['*'] = 30;
+
+    mlir::MLIRContext Context;
+    Context.getOrLoadDialect<mlir::alg::AlgDialect>();
+
+    MLIRGenImpl Gen(Context);
 
     fprintf(stderr, ">>> ");
     getNextToken();
@@ -285,9 +294,12 @@ int run() {
                 break;
             case Token::tok_def: {
                 auto Definition = ParseGroup();
-                if (Definition)
+                if (Definition) {
                     Definition->dump();
-                else
+
+                    // Call into MLIR code generation.
+                    Gen.mlirGen(*Definition);
+                } else
                     std::cerr << "No AST produced!\n";
                 break;
             }

@@ -17,7 +17,7 @@ int run();
 
 static std::unique_ptr<ExprAST> ParseParenExpr();
 
-static std::unique_ptr<ExprAST> ParseIdentifierExpr();
+static std::unique_ptr<VariableExprAST> ParseIdentifierExpr();
 
 static std::unique_ptr<ExprAST> ParseNumberExpr();
 
