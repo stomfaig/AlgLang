@@ -8,28 +8,28 @@ A group is defined by the `def` keyword:
 
 ```
     # defining an trivial group.
-    G = def[]{};
+    def G();
 ```
 
 There are two sets of arguments one can provide:
-- in `[]` one specifies the generators of the group,
+- in `()` one specifies the generators of the group,
 - in `{}` one specifies relations between the generators of the group.
 
 Thus, one can define $\Z$ by setting:
 ```
-    Z = def[g]{};
+    def Z(g){};
 ```
 
 Or, one can define $\Z/2$ by writing:
 ```
-    Z2 = def[g]{g + g = e};
+    def Z2(g){g + g = e};
 ```
 
-**Note.** Every group automatically has an element $e$.
+**Note.** Every group should automatically has an element $e$.
 
 One can also take inverses of elements, simply by using `-` instead:
 ```
-    G = def[g];
+    def G(g);
 
     # inverse of $g$
     h = G(-g);
@@ -40,21 +40,17 @@ One can also take inverses of elements, simply by using `-` instead:
 Obtaining elements of the group are performed as follows:
 
 ```
-    G = def[g];
+    def G(g);
 
-    h = G(g + g);
-```
-
-That is, we write the operation we would like to perform in `()`'s after the name of the group. This can also be done without specifying the group in which operations to be performed, by simply writing
-```
     h = g + g;
+    # or:
+    G: h = g + g;
 ```
-in which case the group to which the item belongs is identified automatically.
+The first option does not specify the group we are working in. This is convenient when there is only one group in question, or if the groups in question use distinct labels for their elements. The second option is to explicitly specify the group we are working in by starting the line by `G:`.
 
+### Ideas / Plans
 
-### TODO: write these into proper docs.
-
-1. **Binary op supports.**  
+1. **Binary op support.**  
     The AST implemented for AlgLang has a `BinaryExprAST` class, which might sound overkill, since we should be fine with only supporting `+` and `-` operations. However, it might be a good idea to include the option to define custom operations, like conjugation:
     ```
         # Concept of defining a custom binary operation
@@ -66,14 +62,8 @@ in which case the group to which the item belongs is identified automatically.
         t_2 = l - k;
 
         # These two are the same!
-
-        # NB. the exact syntax here might change.
     ```
-
-## Implementation
-
-
-### Parsing.
-
+2. **Group homomorphisms.**
+    Since currently, and likely until any big upgrade, the language supports only abelian groups -- or _typed vectors_ -- it might make sense to define group homomorphisms, subgroups, cosets, etc. 
 
 
