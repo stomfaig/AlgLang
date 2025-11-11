@@ -220,7 +220,7 @@ static std::unique_ptr<GroupPrototypeAST>ParseGroupPrototype() {
     return std::make_unique<GroupPrototypeAST>(GroupName, std::move(GroupGenerators));
 } 
 
-static std::unique_ptr<GroupAST> ParseGroup() {
+static std::unique_ptr<ExprAST> ParseGroup() {
     // Eat `def`.
     getNextToken(); 
     

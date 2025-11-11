@@ -27,7 +27,7 @@ static std::unique_ptr<ExprAST> ParseExpression();
 
 static std::unique_ptr<GroupPrototypeAST>ParseGroupPrototype();
 
-static std::unique_ptr<GroupAST> ParseGroup();
+static std::unique_ptr<ExprAST> ParseGroup();
 
 static std::unique_ptr<ExprAST> ParsePrimary();
 
