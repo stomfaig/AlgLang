@@ -6,6 +6,7 @@
 #include <map>
 
 #include "mlir/IR/MLIRContext.h"
+#include "mlir/Dialect/Arith/IR/Arith.h"
 
 #include "ast.h"
 #include "parser.h"
@@ -152,7 +153,10 @@ static std::unique_ptr<ExprAST> ParseBinOpRHS(int ExpressionPrecedence, std::uni
 
         std::unique_ptr<ExprAST> RHS = ParsePrimary();
 
-        if (!RHS) return nullptr;
+        if (!RHS) {
+            fprintf(stderr, "Parsing first RHS in ParseBinOpRHS failed on token %c", CurrentToken);
+            return nullptr;
+        }
 
         int NextPrecedence = GetTokPrecedence();
 
@@ -168,8 +172,10 @@ static std::unique_ptr<ExprAST> ParseBinOpRHS(int ExpressionPrecedence, std::uni
 
 static std::unique_ptr<ExprAST> ParseExpression() {
     auto LHS = ParsePrimary();
-    if (!LHS)
+    if (!LHS) {
+        fprintf(stderr, "LHS parsing failed in ParseExpression.");
         return nullptr;
+    }
 
     return ParseBinOpRHS(0, std::move(LHS));
 }
@@ -235,7 +241,7 @@ static std::unique_ptr<ExprAST> ParseGroup() {
         getNextToken();
         auto Rule = ParseExpression();
         if (!Rule) {
-            fprintf(stderr, "Rule expression parsin failed.");
+            fprintf(stderr, "Rule expression parsing failed.");
             return nullptr;
         }
         
@@ -279,6 +285,7 @@ int run() {
 
     mlir::MLIRContext Context;
     Context.getOrLoadDialect<mlir::alg::AlgDialect>();
+    Context.getOrLoadDialect<mlir::arith::ArithDialect>();
 
     MLIRGenImpl Gen(Context);
 
@@ -298,7 +305,8 @@ int run() {
                     Definition->dump();
 
                     // Call into MLIR code generation.
-                    Gen.mlirGen(*Definition);
+                    auto Module = Gen.mlirModuleGen(*Definition);
+                    Module.print(llvm::outs());
                 } else
                     std::cerr << "No AST produced!\n";
                 break;
@@ -306,9 +314,12 @@ int run() {
             default: {
                 auto Assign = ParseAssign();
 
-                if (Assign)
+                if (Assign) {
                     Assign->dump();
-                else
+
+                    auto Module = Gen.mlirModuleGen(*Assign);
+                    Module.print(llvm::outs());
+                } else
                     std::cerr << "No AST produced!\n";
                 break;
             }
