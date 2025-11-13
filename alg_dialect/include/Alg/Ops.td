@@ -85,3 +85,21 @@ def AddOp : Alg_Op<"add"> {
         Alg_Element:$result
     );
 }
+
+def IntMul : Alg_Op<"sc_mul"> {
+    let summary = "Multiply a group elem by an integer.";
+
+    let description = [{
+        Multiply an element of a group by an integer, as shorthand for
+        repeated addition.
+    }];
+
+    let arguments = (ins
+        Alg_Element:$elem,
+        Builtin_Integer:$mult
+    );
+
+    let results = (outs
+        Alg_Element:$result
+    );
+}
