@@ -4,12 +4,14 @@
 #include <map>
 
 #include "mlirgen.h"
+#include "ast.h"
 
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/IR/MLIRContext.h"
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinTypes.h"
 #include "mlir/IR/Verifier.h"
+#include "mlir/Dialect/Arith/IR/Arith.h"
 
 #include "Alg/AlgDialect.h"
 #include "Alg/AlgOps.h"
@@ -17,18 +19,78 @@
 
 #include "ast.h"
 
-mlir::LogicalResult MLIRGenImpl::declare(llvm::StringRef varname, mlir::Value varval) {
+MLIRGenImpl::MLIRGenImpl(mlir::MLIRContext &context): Builder(&context) {
+    Module = mlir::ModuleOp::create(Builder.getUnknownLoc());
+    Builder.setInsertionPointToStart(Module.getBody());
+}
+
+mlir::ModuleOp MLIRGenImpl::mlirModuleGen(const ExprAST &expr) {
+    mlirGen(expr);
+    return Module;
+}
+
+/// @brief Dispatcher method based on the type of node the expression was casted from.
+/// @param expr 
+/// @return The generated MLIR Value.
+mlir::Value MLIRGenImpl::mlirGen(const ExprAST &expr) {
+    switch (expr.getKind()) {
+        case ExprAST::EAK_Number:
+            return mlirGen(llvm::cast<NumberExprAST>(expr));
+            break;
+        case ExprAST::EAK_Variable:
+            return mlirGen(llvm::cast<VariableExprAST>(expr));
+            break;
+        case ExprAST::EAK_Assign:
+            return mlirGen(llvm::cast<AssignAST>(expr));
+            break;
+        case ExprAST::EAK_BinaryOp:
+            return mlirGen(llvm::cast<BinaryOpAST>(expr));
+            break;
+        case ExprAST::EAK_Group:
+            return mlirGen(llvm::cast<GroupAST>(expr));
+            break;
+        default:
+            return nullptr;
+    }
+} 
+
+/// @brief Method for declaring variables in the SymbolTable.
+/// @param varname Name of the variable to be the SymbolTable key.
+/// @param varval MLIR Value to be associated with the variable name.
+/// @return mlir::LogicalValue depending on whether there was already an item with the given key in the SymbolTable or not.
+mlir::LogicalResult MLIRGenImpl::declare(std::string varname, mlir::Value varval) {
     if (SymbolTable.count(varname))
         return mlir::failure();
     SymbolTable.insert({varname, varval});
     return mlir::success();
 }
 
-mlir::Value MLIRGenImpl::mlirGen(const ExprAST &expr) {
-    // Not implemented.
-    return nullptr;
+/// @brief Generates MLIR for numeric constant expression, by declaring an I32 type from the arith dialect.
+/// @param expr 
+/// @return The numerical constant Value generated.
+mlir::Value MLIRGenImpl::mlirGen(const NumberExprAST &expr) {
+    auto Type = Builder.getIntegerType(32);
+    auto Attr = Builder.getIntegerAttr(Type, expr.getVal());
+
+    auto Loc = Builder.getUnknownLoc();
+
+    auto ConstOp = mlir::arith::ConstantOp::create(Builder, Loc, Attr);
+
+    return ConstOp.getResult();
 }
 
+/// @brief Retrieves the SSA associated with a given name.
+/// @param var 
+/// @return Retrieved SSA val.
+mlir::Value MLIRGenImpl::mlirGen(const VariableExprAST &var) {
+    // TODO: implement error logic.
+    auto search = SymbolTable.find(var.getName());
+    return search->second;
+}
+
+/// @brief Generates MLIR code for an assign operation, by registering the RHS SSA value into the SymbolTable (this generation might produce MLIR).
+/// @param assign 
+/// @return The Value of RHS.
 mlir::Value MLIRGenImpl::mlirGen(const AssignAST &assign) {
 
     mlir::Value Val = mlirGen(assign.getRHS());
@@ -40,13 +102,34 @@ mlir::Value MLIRGenImpl::mlirGen(const AssignAST &assign) {
     return Val;
 }
 
-mlir::ArrayAttr makeIntArrayAttr(mlir::OpBuilder &builder,
-                                 const std::vector<int64_t> &v) {
-  llvm::SmallVector<mlir::Attribute, 8> elems;
-  elems.reserve(v.size());
-  for (int64_t x : v)
-    elems.push_back(builder.getI64IntegerAttr(x)); // integer attrs
-  return builder.getArrayAttr(elems);
+
+/// @brief Generates MLIR code for binary op into the static module, by parsing the op type, and constructing the correponding ALg ops.
+/// @param binop pointer to the binop AST node.
+/// @return The resulting SSA of the op.
+mlir::Value MLIRGenImpl::mlirGen(const BinaryOpAST &binop) {
+    
+    auto Loc = Builder.getUnknownLoc();
+
+    mlir::Value LHS = mlirGen(binop.getLHS());
+    mlir::Value RHS = mlirGen(binop.getRHS());
+
+    // Type checking is need (?)
+
+    switch (binop.getOp()) {
+        case '+': {
+            auto AddOp = mlir::alg::AddOp::create(Builder, Loc, LHS.getType(), LHS, RHS);
+            return AddOp.getResult();
+            break; }
+        case '*': {
+            auto IntMulOp = mlir::alg::IntMul::create(Builder, Loc, LHS.getType(), LHS, RHS);
+            return IntMulOp.getResult();
+            break;
+        }
+        default:
+            return nullptr;
+            break;
+    }
+
 }
 
 /// @brief Generates MLIR code for the elements of the group, by creating an Element type for each generator.
@@ -81,29 +164,18 @@ mlir::Value MLIRGenImpl::mlirGen(const GroupAST &group) {
         auto Type = mlir::alg::ElementType::get(Context, Group, Vector_Type);
 
         auto CreateOp = mlir::alg::ElementCreateOp::create(Builder, Loc, Type, arrAttr, Group);
-        CreateOp.print(llvm::errs());
-        llvm::errs() << "\n";
-        CreateOp.getResult();
+        auto result = CreateOp.getResult();
+
+        // TODO: add error handling if the registration fails
+        if (failed(declare(GeneratorName, result))) {
+            std::cerr << "Variable declaration failed for variable " << GeneratorName;
+        }
 
         idx++;
     }
 
     // return a vector of all the emitted values.
     return nullptr;
-}
-
-mlir::Value MLIRGenImpl::mlirGen(const BinaryOpAST &binop) {
-
-    auto Loc = Builder.getUnknownLoc();
-
-    auto LHS = mlirGen(binop.getLHS());
-    auto RHS = mlirGen(binop.getRHS());
-
-    // TODO: need to check that the two types actually agree, but maybe this can be done in MLIR.
-
-    auto AddOp = mlir::alg::AddOp::create(Builder, Loc, LHS.getType(), LHS, RHS);
-
-    return AddOp.getResult();
 }
 
 #endif // FRONTEND_MLIRGEN_CPP

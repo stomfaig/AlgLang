@@ -16,4 +16,5 @@ target_link_libraries(Codegen
     PRIVATE
         MLIRAlg
         AST
+        MLIRArithDialect
 )

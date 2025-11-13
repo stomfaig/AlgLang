@@ -17,24 +17,22 @@ class MLIRGenImpl {
     
 public:
 
-MLIRGenImpl(mlir::MLIRContext &context) : Builder(&context) {};
+MLIRGenImpl(mlir::MLIRContext &context);
 
-//mlir::ModuleOp mlirGen(const ExprAST ModuleAST);
+mlir::ModuleOp mlirModuleGen(const ExprAST &expr);
+
+private: 
 
 mlir::ModuleOp Module;
 mlir::OpBuilder Builder;
-std::map<llvm::StringRef, mlir::Value> SymbolTable;
+std::map<std::string, mlir::Value> SymbolTable;
 
+mlir::LogicalResult declare(std::string varname, mlir::Value varval);
 mlir::Value mlirGen(const ExprAST &expr);
-
-mlir::LogicalResult declare(llvm::StringRef varname, mlir::Value varval);
-
 mlir::Value mlirGen(const NumberExprAST &numexpr);
-
+mlir::Value mlirGen(const VariableExprAST &var);
 mlir::Value mlirGen(const AssignAST &assign);
-
 mlir::Value mlirGen(const GroupAST &group);
-
 mlir::Value mlirGen(const BinaryOpAST &binop);
 
 };
