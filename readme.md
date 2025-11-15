@@ -1,6 +1,18 @@
 ## `AlgLang` as a simple MLIR example
 
-This repo contains a demo project for using MLIR. `ALgLang` is a language, where one can construct and manipulate [Abelian groups](https://en.wikipedia.org/wiki/Abelian_group). This domain is chosen as a subsistitute of the matrix manipulation language used in [Toy](https://mlir.llvm.org/docs/Tutorials/Toy/), to give one a playground, where all the ideas of simplyfying AST's, designing passes has to be done from scratch.
+This repo contains a demo project for using MLIR. `ALgLang` is a language, where one can construct and manipulate [Abelian groups](https://en.wikipedia.org/wiki/Abelian_group). This domain is chosen as a substitute of the matrix manipulation language used in [Toy](https://mlir.llvm.org/docs/Tutorials/Toy/), to give one a playground, where all the ideas of simplifying AST's, designing passes has to be done from scratch.  
+
+While at first it might seem that Abelian groups only of interest to mathematicians and they are completely irrelevant for any computational applications, I am keen to highlight that the structure of Abelian groups is very similar to that of "glued vector lattices." The following brief discussion justifies this.
+
+1. Given generators $g_1, \ldots, g_n$ of an Abelian group, we can represent the elements of the group as vectors in $\Z^n$. Addition and subtraction of elements maps exactly to addition and subtraction of their representing vectors.
+2. Since each element belongs to a group, there is extra type-checking to be done compared to simple vector manipulation: only elements that belong to the same group can be added, even if their representation vectors otherwise have compatible sizes. Note also, that this is purely compile time information, so after typechecking `AlgLang` can be lowered to a vector manipulation dialect, and thus to machine code.
+3. The language also exposes another difficulty, where some "vectors" can have multiple representations. For example, consider the group, defined in `AlgLang` as:
+  ```AlgLang
+    def G(g, h) {
+      g - 2 * h
+    };
+  ```
+  The representations of the elements of this language are then linear combinations of the vectors $v_g = (1, 0)$ and $v_h = (0, 1)$, with the extra condition, that $(1, 0) = (0, 2)$.
 
 
 ### How does `AlgLang` work?
@@ -43,7 +55,6 @@ ninja
 ```
 
 The frontend flag controls whether the build file created will also compile the interpreter. Without it only the MLIR dialect is compiled.
-
 
 ### Example
 
@@ -94,9 +105,3 @@ module {
 }
 
 ```
-
-## Roadmap
-
-- [ ] Set up compilation from AST to MLIR dialect [in progress]
-- [ ] Implement proper error logging
-- [ ] Implement type checking and type inference
