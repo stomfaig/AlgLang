@@ -1,7 +1,11 @@
 #ifndef FRONTEND_AST_H
 #define FRONTEND_AST_H
 
+#include <map>
+
+
 #include "ast.h"
+#include "mlir/IR/MLIRContext.h"
 
 enum Token {
     tok_eof = -1,
@@ -13,22 +17,43 @@ enum Token {
     tok_number = -4,
 };
 
-int run();
+class Parser {
 
-static std::unique_ptr<ExprAST> ParseParenExpr();
+    enum Token {
+        tok_eof = -1,
+        tok_def = -2,
+        tok_identifier = -3,
+        tok_number=-4,
+    };
 
-static std::unique_ptr<VariableExprAST> ParseIdentifierExpr();
+    mlir::MLIRContext Context;
+    std::string IdentifierStr;
+    double NumVal;
+    std::map<char, int> BinopPrecedence;
+    int CurrentToken;
 
-static std::unique_ptr<ExprAST> ParseNumberExpr();
+     
+    int GetTokPrecedence();    
+    int gettok();
+    int getNextToken();
 
-static std::unique_ptr<ExprAST> ParseBinOpRHS(int ExpressionPrecedence, std::unique_ptr<ExprAST> LHS);
+    std::unique_ptr<ExprAST> ParseParenExpr();
+    std::unique_ptr<VariableExprAST> ParseIdentifierExpr();
+    std::unique_ptr<ExprAST> ParseNumberExpr();
+    std::unique_ptr<ExprAST> ParseBinOpRHS(int ExpressionPrecedence, std::unique_ptr<ExprAST> LHS);
+    std::unique_ptr<ExprAST> ParseExpression();
+    std::unique_ptr<GroupPrototypeAST>ParseGroupPrototype();
+    std::unique_ptr<ExprAST> ParseGroup();
+    std::unique_ptr<ExprAST> ParsePrimary();
+    std::unique_ptr<ExprAST> ParseAssign();
 
-static std::unique_ptr<ExprAST> ParseExpression();
-
-static std::unique_ptr<GroupPrototypeAST>ParseGroupPrototype();
-
-static std::unique_ptr<ExprAST> ParseGroup();
-
-static std::unique_ptr<ExprAST> ParsePrimary();
+public:
+    Parser(): BinopPrecedence {
+        {'+', 10},
+        {'-', 10},
+        {'*', 30},
+    } {};
+    int parse();
+};
 
 #endif // FRONTEND_AST_H

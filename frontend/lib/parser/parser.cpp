@@ -3,7 +3,6 @@
 
 #include <string>
 #include <iostream>
-#include <map>
 
 #include "mlir/IR/MLIRContext.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
@@ -12,12 +11,7 @@
 #include "parser.h"
 #include "mlirgen.h"
 
-static std::string IdentifierStr;
-static double NumVal;
-static std::map<char, int> BinopPrecedence;
-static int CurrentToken;
-
-static int GetTokPrecedence() {
+int Parser::GetTokPrecedence() {
   if (!isascii(CurrentToken))
     return -1;
 
@@ -27,7 +21,7 @@ static int GetTokPrecedence() {
   return TokPrec;
 }
 
-static int gettok() {
+int Parser::gettok() {
     static int LastChar = ' ';
 
     // Swallow spaces
@@ -91,15 +85,15 @@ static int gettok() {
     return RetChar;
 }
 
-static int getNextToken() {
+int Parser::getNextToken() {
     CurrentToken = gettok();
 
     return CurrentToken;
 }
 
-// This method assumes that the next token is a `(`
-static std::unique_ptr<ExprAST> ParseParenExpr() {
-    getNextToken(); // Eat `(`
+std::unique_ptr<ExprAST> Parser::ParseParenExpr() {
+    // Eat `(`
+    getNextToken(); 
 
     auto expr = ParseExpression();
     if (!expr) {
@@ -114,20 +108,20 @@ static std::unique_ptr<ExprAST> ParseParenExpr() {
     return expr;
 }
 
-static std::unique_ptr<VariableExprAST> ParseIdentifierExpr() {
+std::unique_ptr<VariableExprAST> Parser::ParseIdentifierExpr() {
     std::string IdentifierName = IdentifierStr;
     getNextToken();
     return std::make_unique<VariableExprAST>(IdentifierName);
 }
 
 // This method assumes that the next token is a `Token::tok_number`
-static std::unique_ptr<ExprAST> ParseNumberExpr() {
+std::unique_ptr<ExprAST> Parser::ParseNumberExpr() {
     std::unique_ptr<ExprAST> result = std::make_unique<NumberExprAST>(NumVal);
     getNextToken();
     return result;
 }
 
-static std::unique_ptr<ExprAST> ParsePrimary() {
+std::unique_ptr<ExprAST> Parser::ParsePrimary() {
     switch (CurrentToken) {
         default:
             return nullptr;
@@ -140,7 +134,7 @@ static std::unique_ptr<ExprAST> ParsePrimary() {
     }
 }
 
-static std::unique_ptr<ExprAST> ParseBinOpRHS(int ExpressionPrecedence, std::unique_ptr<ExprAST> LHS) {
+std::unique_ptr<ExprAST> Parser::ParseBinOpRHS(int ExpressionPrecedence, std::unique_ptr<ExprAST> LHS) {
 
     while (true) {
         int TokenPrecedence = GetTokPrecedence();
@@ -154,7 +148,7 @@ static std::unique_ptr<ExprAST> ParseBinOpRHS(int ExpressionPrecedence, std::uni
         std::unique_ptr<ExprAST> RHS = ParsePrimary();
 
         if (!RHS) {
-            fprintf(stderr, "Parsing first RHS in ParseBinOpRHS failed on token %c", CurrentToken);
+            mlir::emitError(mlir::UnknownLoc::get(&Context)) << "Parsing first RHS in ParseBinOpRHS failed on token " << CurrentToken;
             return nullptr;
         }
 
@@ -170,23 +164,23 @@ static std::unique_ptr<ExprAST> ParseBinOpRHS(int ExpressionPrecedence, std::uni
     }
 }
 
-static std::unique_ptr<ExprAST> ParseExpression() {
+std::unique_ptr<ExprAST> Parser::ParseExpression() {
     auto LHS = ParsePrimary();
     if (!LHS) {
-        fprintf(stderr, "LHS parsing failed in ParseExpression.");
+        mlir::emitError(mlir::UnknownLoc::get(&Context)) << "LHS parsing failed in ParseExpression.";
         return nullptr;
     }
 
     return ParseBinOpRHS(0, std::move(LHS));
 }
 
-static std::unique_ptr<GroupPrototypeAST>ParseGroupPrototype() {
+std::unique_ptr<GroupPrototypeAST> Parser::ParseGroupPrototype() {
 
     // The parsing of the protype has the responsibility to read everything between the `def` keyword and the body of the definition.
 
     // This must be followed by the name of the group
     if (CurrentToken != Token::tok_identifier) {
-        fprintf(stderr, "Error: Expected group name after `def`");
+        mlir::emitError(mlir::UnknownLoc::get(&Context)) << "Expected group name after `def`";
         return nullptr;
     }
     std::string GroupName = IdentifierStr;
@@ -196,7 +190,7 @@ static std::unique_ptr<GroupPrototypeAST>ParseGroupPrototype() {
 
     // This must be followed by a `(`:
     if (CurrentToken != '(') {
-        fprintf(stderr, "Error: Group parsing: expected ( after group name.");
+        mlir::emitError(mlir::UnknownLoc::get(&Context)) << "Group parsing: expected ( after group name.";
         return nullptr;
     }
 
@@ -208,7 +202,7 @@ static std::unique_ptr<GroupPrototypeAST>ParseGroupPrototype() {
     do {
         getNextToken(); // TODO: this can be moved into the `while`
         if (CurrentToken != Token::tok_identifier) {
-            fprintf(stderr, "Error: Group parsing: expected comma separated list of generators.");
+            mlir::emitError(mlir::UnknownLoc::get(&Context)) << "Group parsing: expected comma separated list of generators.";
             return nullptr;
         }
         GroupGenerators.push_back(IdentifierStr);
@@ -217,7 +211,7 @@ static std::unique_ptr<GroupPrototypeAST>ParseGroupPrototype() {
     } while(CurrentToken == ',');
 
     if (CurrentToken != ')') {
-        fprintf(stderr, "Error: Group parsing: expected ) after group argument list.");
+        mlir::emitError(mlir::UnknownLoc::get(&Context)) << "Group parsing: expected ) after group argument list.";
         return nullptr;
     }
 
@@ -226,7 +220,7 @@ static std::unique_ptr<GroupPrototypeAST>ParseGroupPrototype() {
     return std::make_unique<GroupPrototypeAST>(GroupName, std::move(GroupGenerators));
 } 
 
-static std::unique_ptr<ExprAST> ParseGroup() {
+std::unique_ptr<ExprAST> Parser::ParseGroup() {
     // Eat `def`.
     getNextToken(); 
     
@@ -240,29 +234,26 @@ static std::unique_ptr<ExprAST> ParseGroup() {
     do {
         getNextToken();
         auto Rule = ParseExpression();
-        if (!Rule) {
-            fprintf(stderr, "Rule expression parsing failed.");
-            return nullptr;
-        }
+        if (!Rule) return nullptr;
         
         Rules.push_back(std::move(Rule));
     } while (CurrentToken == ',');
 
 
     if (CurrentToken != '}') {
-        fprintf(stderr, "Error: Group generators should end with '}'.");
+        mlir::emitError(mlir::UnknownLoc::get(&Context)) << "Group generators should end with '}'.";
         return nullptr;
     }
     getNextToken();
     return std::make_unique<GroupAST>(std::move(GroupPrototype), std::move(Rules));
 }
 
-static std::unique_ptr<ExprAST> ParseAssign() {
+std::unique_ptr<ExprAST> Parser::ParseAssign() {
 
     std::unique_ptr<VariableExprAST> LHS = ParseIdentifierExpr();
 
     if (CurrentToken != '=') {
-        fprintf(stderr, "Currently only group definitions and assignments are supported.");
+        mlir::emitError(mlir::UnknownLoc::get(&Context)) << "Currently only group definitions and assignments are supported.";
         return nullptr;
     }
 
@@ -271,32 +262,27 @@ static std::unique_ptr<ExprAST> ParseAssign() {
     auto RHS = ParseExpression();
 
     if (!RHS) {
-        fprintf(stderr, "Assignment RHS could not be parsed.");
+        mlir::emitError(mlir::UnknownLoc::get(&Context)) << "Assignment RHS could not be parsed.";
         return nullptr;
     }
 
     return std::make_unique<AssignAST>(std::move(LHS), std::move(RHS));
 }
 
-int run() {
-    BinopPrecedence['+'] = 10;
-    BinopPrecedence['-'] = 10;
-    BinopPrecedence['*'] = 30;
-
-    mlir::MLIRContext Context;
+int Parser::parse() {
     Context.getOrLoadDialect<mlir::alg::AlgDialect>();
     Context.getOrLoadDialect<mlir::arith::ArithDialect>();
 
     MLIRGenImpl Gen(Context);
 
-    fprintf(stderr, ">>> ");
+    std::cout << ">>>";
     getNextToken();
 
     while(true) {
         switch (CurrentToken) {
             case Token::tok_eof:
                 return 0;
-            case ';': // ignore top-level semicolons.
+            case ';':
                 getNextToken();
                 break;
             case Token::tok_def: {
@@ -304,11 +290,9 @@ int run() {
                 if (Definition) {
                     Definition->dump();
 
-                    // Call into MLIR code generation.
                     auto Module = Gen.mlirModuleGen(*Definition);
                     Module.print(llvm::outs());
-                } else
-                    std::cerr << "No AST produced!\n";
+                }
                 break;
             }
             default: {
@@ -319,9 +303,7 @@ int run() {
 
                     auto Module = Gen.mlirModuleGen(*Assign);
                     Module.print(llvm::outs());
-                } else
-                    std::cerr << "No AST produced!\n";
-                break;
+                }
             }
         }
         fprintf(stderr, ">>> ");
