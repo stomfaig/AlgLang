@@ -1,2 +1,4 @@
 build/
 CMakePresets.json
+.DS_Store
+.cache/
