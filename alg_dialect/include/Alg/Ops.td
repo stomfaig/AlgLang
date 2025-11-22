@@ -103,3 +103,19 @@ def IntMul : Alg_Op<"sc_mul"> {
         Alg_Element:$result
     );
 }
+
+def UnaryNeg : Alg_Op<"un_neg"> {
+    let summary = "Unary negation of group elements (i.e. group inverse)";
+
+    let description = [{
+        Construct the inverse of an element.
+    }];
+
+    let arguments = (ins
+        Alg_Element:$elem
+    );
+
+    let results = (outs
+        Alg_Element:$result
+    );
+}
