@@ -16,4 +16,11 @@ target_link_libraries(Parser
     MLIRAlg
     AST
     Codegen
+    Lower
+    MLIRIR
+    MLIRPass
+    MLIRTransforms
+    MLIRRewrite
+    MLIRDialectUtils
+    MLIRVectorDialect
 )

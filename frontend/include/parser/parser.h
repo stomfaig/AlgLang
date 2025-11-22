@@ -53,7 +53,9 @@ public:
         {'-', 10},
         {'*', 30},
     } {};
+
     int parse();
+    void runOnOperation();
 };
 
 #endif // FRONTEND_AST_H

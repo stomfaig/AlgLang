@@ -1,15 +1,20 @@
 #ifndef FRONTEND_PARSER_CPP
 #define FRONTEND_PARSER_CPP
 
+#include <memory>
 #include <string>
 #include <iostream>
 
+#include "mlir/IR/BuiltinOps.h"
 #include "mlir/IR/MLIRContext.h"
+#include "mlir/Pass/PassManager.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
+#include "mlir/Pass/PassRegistry.h"
 
 #include "ast.h"
 #include "parser.h"
 #include "mlirgen.h"
+#include "lower.h"
 
 int Parser::GetTokPrecedence() {
   if (!isascii(CurrentToken))
@@ -273,7 +278,12 @@ int Parser::parse() {
     Context.getOrLoadDialect<mlir::alg::AlgDialect>();
     Context.getOrLoadDialect<mlir::arith::ArithDialect>();
 
+    auto pm = mlir::PassManager::on<mlir::ModuleOp>(&Context);
+    pm.addPass(std::make_unique<AlgLoweringPass>());
+
     MLIRGenImpl Gen(Context);
+
+    mlir::ModuleOp module;
 
     std::cout << ">>>";
     getNextToken();
@@ -285,13 +295,25 @@ int Parser::parse() {
             case ';':
                 getNextToken();
                 break;
+            case '%':
+                if (!module) {
+                    llvm::outs() << "No code to lower.";
+                }
+                if (failed(pm.run(module))) {
+                    llvm::outs() << "Lowering failed.";
+                    return 1;
+                }
+
+                module->print(llvm::outs());
+                return 0;
+                break;
             case Token::tok_def: {
                 auto Definition = ParseGroup();
                 if (Definition) {
                     Definition->dump();
 
-                    auto Module = Gen.mlirModuleGen(*Definition);
-                    Module.print(llvm::outs());
+                    module = Gen.mlirModuleGen(*Definition);
+                    module->print(llvm::outs());
                 }
                 break;
             }
@@ -301,8 +323,8 @@ int Parser::parse() {
                 if (Assign) {
                     Assign->dump();
 
-                    auto Module = Gen.mlirModuleGen(*Assign);
-                    Module.print(llvm::outs());
+                    module = Gen.mlirModuleGen(*Assign);
+                    module->print(llvm::outs());
                 }
             }
         }

@@ -6,6 +6,7 @@
 #include "mlirgen.h"
 #include "ast.h"
 
+#include "mlir/IR/BuiltinAttributes.h"
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/IR/MLIRContext.h"
 #include "mlir/IR/Builders.h"
@@ -13,7 +14,6 @@
 #include "mlir/IR/Verifier.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
 
-#include "Alg/AlgDialect.h"
 #include "Alg/AlgOps.h"
 #include "Alg/AlgTypes.h"
 
