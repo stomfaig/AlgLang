@@ -175,7 +175,7 @@ mlir::Value MLIRGenImpl::mlirGen(const GroupAST &group) {
 
         mlir::ArrayAttr arrAttr = Builder.getArrayAttr(elements);
 
-        mlir::Type elemType = mlir::IntegerType::get(Context, 64);
+        mlir::Type elemType = mlir::IntegerType::get(Context, 32);
         
         llvm::SmallVector<int64_t, 1> shapeVec = {static_cast<int64_t>(N)};
         llvm::ArrayRef<int64_t> shape(shapeVec);
