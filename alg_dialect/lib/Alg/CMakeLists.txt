@@ -12,7 +12,7 @@ add_mlir_library(MLIRAlg
 
 target_include_directories(MLIRAlg
     PUBLIC
-      ${PROJECT_SOURCE_DIR}/alg_dialect/include
+      ../../include
       ${CMAKE_CURRENT_BINARY_DIR}/../../include
       ${MLIR_SRC_DIR}/include               
       ${MLIR_BUILD_INCLUDE_DIR}            
