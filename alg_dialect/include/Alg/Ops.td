@@ -84,6 +84,8 @@ def AddOp : Alg_Op<"add"> {
     let results = (outs
         Alg_Element:$result
     );
+
+    let hasVerifier = 1;
 }
 
 def IntMul : Alg_Op<"sc_mul"> {
