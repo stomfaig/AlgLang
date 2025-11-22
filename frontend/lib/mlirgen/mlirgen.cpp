@@ -118,8 +118,29 @@ mlir::Value MLIRGenImpl::mlirGen(const BinaryOpAST &binop) {
     switch (binop.getOp()) {
         case '+': {
             auto AddOp = mlir::alg::AddOp::create(Builder, Loc, LHS.getType(), LHS, RHS);
+            
+            if (failed(mlir::verify(AddOp))) {
+                llvm::errs() << "Invalid addition. Check group memberships.\n";
+                AddOp->erase();
+                return nullptr;
+            }
+
             return AddOp.getResult();
-            break; }
+        }
+        case '-': {
+            auto NegOp = mlir::alg::UnaryNeg::create(Builder, Loc, RHS.getType(), RHS);
+            auto NegRHSVal = NegOp.getResult();
+
+            auto AddOp = mlir::alg::AddOp::create(Builder, Loc, LHS.getType(), LHS, NegRHSVal);
+
+            if (failed(mlir::verify(AddOp))) {
+                llvm::errs() << "Invalid subtraction. Check group memberships.";
+                NegOp->erase();
+                AddOp.erase();
+            }
+
+            return AddOp.getResult();
+        }
         case '*': {
             auto IntMulOp = mlir::alg::IntMul::create(Builder, Loc, LHS.getType(), LHS, RHS);
             return IntMulOp.getResult();
