@@ -27,6 +27,7 @@ public:
     virtual ~ExprAST() = default;
     virtual void dump(std::ostream &os = std::cout, unsigned indent = 0) const;
     ExprASTKind getKind() const { return Kind; }
+    mlir::Location getLocation() const { return Loc; }
 };
 
 
