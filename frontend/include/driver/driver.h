@@ -10,10 +10,9 @@
 #include "parser.h"
 
 struct CompilerOptions {
-  std::string inputFile;
-  bool emitMLIR;
-  bool runCanonicalization;
-  std::string passPipeline;
+  std::string InputFile;
+  bool DumpAST;
+  bool DumpAlg;
 };
 
 CompilerOptions CLIParser(int argc, char **argv);
@@ -28,6 +27,8 @@ private:
     mlir::PassManager Manager;
     MLIRGenImpl Implementor;
 
+    void loadDialects();
+    void loadPasses();
     void setupPasses();
 
 

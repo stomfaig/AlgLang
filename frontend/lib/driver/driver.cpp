@@ -11,28 +11,69 @@
 #include "mlir/IR/MLIRContext.h"
 #include "mlir/IR/PatternMatch.h"
 #include "mlir/Pass/PassManager.h"
+#include "mlir/Dialect/Arith/IR/Arith.h"
 
+
+CompilerOptions CLIParser(int argc, char **argv) {
+
+    bool DumpAST = false;
+    bool DumpAlg = false;
+    std::string InputFile = "";
+    for (int i = 1; i < argc; i++) {
+        std::string Elem = argv[i];
+
+        if (Elem == "--dump-ast") {
+            DumpAST = true;
+        } else if (Elem == "--dump-alg") {
+            DumpAlg = true;
+        } else if (Elem == "--input") {
+            InputFile = argv[++i];
+        } else {
+            // Implicitly, a non-qualified field will be taken as a filename too.
+            if (InputFile == "")
+                InputFile = Elem;
+        }
+    }
+
+    return CompilerOptions{
+        InputFile,
+        DumpAST,
+        DumpAlg,
+    };        
+}
 
 AlgDriver::AlgDriver(CompilerOptions &Options):
     Options(Options),
     Context(),
-    Parser(Context, Options.inputFile),
+    Parser(Context, Options.InputFile),
     Manager(&Context),
     Implementor(Context)
 {
-    // Based on the params, add passes
-    //pm.addPass(std::make_unique<AlgLoweringPass>());
+    loadDialects();
+    loadPasses();
+}
 
+void AlgDriver::loadDialects() {
+    Context.getOrLoadDialect<mlir::alg::AlgDialect>();
+    Context.getOrLoadDialect<mlir::arith::ArithDialect>();
+}
+
+void AlgDriver::loadPasses() {
+    // TODO: Based on the params, add passes
+    // pm.addPass(std::make_unique<AlgLoweringPass>());
 }
 
 int AlgDriver::run() {
     auto AST = Parser.Parse();
-    for (const std::unique_ptr<ExprAST> &root : AST) {
-        root->dump();
-    }
     
-    //mlir::ModuleOp Module = Implementor.mlirModuleGen(*AST);
-    //Module->dump();
+    for (const std::unique_ptr<ExprAST> &root : AST) {
+        if (Options.DumpAST)
+            root->dump();
+        Implementor.mlirModuleGen(*root);
+    }
+
+    if (Options.DumpAlg)
+        Implementor.dumpModule();
 
     return 0;
 }

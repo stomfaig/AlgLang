@@ -3,16 +3,8 @@
 
 
 int main(int argc, char* argv[]) {
-    // For now we assume that the user only passes a file path
-
-    CompilerOptions Options({
-        argv[1],
-        false,
-        false,
-        ""
-    });
-    
+    auto Options = CLIParser(argc, argv);
     AlgDriver Driver = AlgDriver(Options);
 
-    Driver.run();
+    return Driver.run();
 }
