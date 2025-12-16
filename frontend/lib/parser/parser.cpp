@@ -4,8 +4,10 @@
 #include <memory>
 #include <string>
 #include <iostream>
+#include <vector>
 
 #include "mlir/IR/BuiltinOps.h"
+#include "mlir/IR/Location.h"
 #include "mlir/IR/MLIRContext.h"
 #include "mlir/Pass/PassManager.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
@@ -13,8 +15,6 @@
 
 #include "ast.h"
 #include "parser.h"
-#include "mlirgen.h"
-#include "lower.h"
 
 int Parser::GetTokPrecedence() {
   if (!isascii(CurrentToken))
@@ -26,12 +26,26 @@ int Parser::GetTokPrecedence() {
   return TokPrec;
 }
 
+char Parser::get_next_char() {
+
+    char Next = Stream.get();
+
+    if (Next == '\n') {
+        CurrentLine++;
+        CurrentChar = 0;
+    } else {
+        CurrentChar++;
+    }
+
+    return Next;
+}
+
 int Parser::gettok() {
     static int LastChar = ' ';
 
     // Swallow spaces
     while (isspace(LastChar)) {
-        LastChar = getchar();
+        LastChar = get_next_char();
     }
 
     // First, we check if the string starts with a number or a letter:
@@ -40,7 +54,7 @@ int Parser::gettok() {
         IdentifierStr = LastChar;
 
         // Read all letters _and_ numbers
-        while (isalnum((LastChar = getchar())))
+        while (isalnum((LastChar = get_next_char())))
             IdentifierStr += LastChar;
 
         // Check if we have read a command
@@ -56,7 +70,7 @@ int Parser::gettok() {
         std::string NumString;
         NumString = LastChar;
 
-        while(isdigit((LastChar = getchar()))) 
+        while(isdigit((LastChar = get_next_char()))) 
             NumString += LastChar;
 
         NumVal = strtod(NumString.c_str(), 0);
@@ -67,14 +81,14 @@ int Parser::gettok() {
     if (LastChar == '#') {
         // Swallow all characters until the end of the line or file
         while (LastChar != EOF || LastChar != '\n' || LastChar != '\r')
-            LastChar = getchar();
+            LastChar = get_next_char();
 
         // If it is not the end of the file, we set LastChar to the next char,
         // and call `gettok` to return the next token.
 
         // NB. The tutorial does not include the `.. = getchar();` call, which seems a bit silly.
         if (LastChar != EOF)
-            LastChar = getchar();
+            LastChar = get_next_char();
         
         return gettok();
     }
@@ -86,7 +100,7 @@ int Parser::gettok() {
     // Otherwise, we update LastChar, and return the ASCII code of the
     // unrecognised char:
     int RetChar = LastChar;
-    LastChar = getchar();
+    LastChar = get_next_char();
     return RetChar;
 }
 
@@ -94,6 +108,10 @@ int Parser::getNextToken() {
     CurrentToken = gettok();
 
     return CurrentToken;
+}
+
+mlir::Location Parser::getLocation() {
+    return mlir::FileLineColLoc::get(&Context, File, CurrentLine, CurrentChar );
 }
 
 std::unique_ptr<ExprAST> Parser::ParseParenExpr() {
@@ -116,12 +134,12 @@ std::unique_ptr<ExprAST> Parser::ParseParenExpr() {
 std::unique_ptr<VariableExprAST> Parser::ParseIdentifierExpr() {
     std::string IdentifierName = IdentifierStr;
     getNextToken();
-    return std::make_unique<VariableExprAST>(IdentifierName);
+    return std::make_unique<VariableExprAST>(IdentifierName, getLocation());
 }
 
 // This method assumes that the next token is a `Token::tok_number`
 std::unique_ptr<ExprAST> Parser::ParseNumberExpr() {
-    std::unique_ptr<ExprAST> result = std::make_unique<NumberExprAST>(NumVal);
+    std::unique_ptr<ExprAST> result = std::make_unique<NumberExprAST>(NumVal, getLocation());
     getNextToken();
     return result;
 }
@@ -153,7 +171,7 @@ std::unique_ptr<ExprAST> Parser::ParseBinOpRHS(int ExpressionPrecedence, std::un
         std::unique_ptr<ExprAST> RHS = ParsePrimary();
 
         if (!RHS) {
-            mlir::emitError(mlir::UnknownLoc::get(&Context)) << "Parsing first RHS in ParseBinOpRHS failed on token " << CurrentToken;
+            mlir::emitError(getLocation()) << "Parsing first RHS in ParseBinOpRHS failed on token " << CurrentToken;
             return nullptr;
         }
 
@@ -165,14 +183,14 @@ std::unique_ptr<ExprAST> Parser::ParseBinOpRHS(int ExpressionPrecedence, std::un
                 return nullptr;
         }
 
-        LHS = std::make_unique<BinaryOpAST>(BinaryOperation, std::move(LHS), std::move(RHS));
+        LHS = std::make_unique<BinaryOpAST>(BinaryOperation, std::move(LHS), std::move(RHS), getLocation());
     }
 }
 
 std::unique_ptr<ExprAST> Parser::ParseExpression() {
     auto LHS = ParsePrimary();
     if (!LHS) {
-        mlir::emitError(mlir::UnknownLoc::get(&Context)) << "LHS parsing failed in ParseExpression.";
+        mlir::emitError(getLocation()) << "LHS parsing failed in ParseExpression.";
         return nullptr;
     }
 
@@ -185,7 +203,7 @@ std::unique_ptr<GroupPrototypeAST> Parser::ParseGroupPrototype() {
 
     // This must be followed by the name of the group
     if (CurrentToken != Token::tok_identifier) {
-        mlir::emitError(mlir::UnknownLoc::get(&Context)) << "Expected group name after `def`";
+        mlir::emitError(getLocation()) << "Expected group name after `def`";
         return nullptr;
     }
     std::string GroupName = IdentifierStr;
@@ -195,7 +213,7 @@ std::unique_ptr<GroupPrototypeAST> Parser::ParseGroupPrototype() {
 
     // This must be followed by a `(`:
     if (CurrentToken != '(') {
-        mlir::emitError(mlir::UnknownLoc::get(&Context)) << "Group parsing: expected ( after group name.";
+        mlir::emitError(getLocation()) << "Group parsing: expected ( after group name.";
         return nullptr;
     }
 
@@ -207,7 +225,7 @@ std::unique_ptr<GroupPrototypeAST> Parser::ParseGroupPrototype() {
     do {
         getNextToken(); // TODO: this can be moved into the `while`
         if (CurrentToken != Token::tok_identifier) {
-            mlir::emitError(mlir::UnknownLoc::get(&Context)) << "Group parsing: expected comma separated list of generators.";
+            mlir::emitError(getLocation()) << "Group parsing: expected comma separated list of generators.";
             return nullptr;
         }
         GroupGenerators.push_back(IdentifierStr);
@@ -216,13 +234,13 @@ std::unique_ptr<GroupPrototypeAST> Parser::ParseGroupPrototype() {
     } while(CurrentToken == ',');
 
     if (CurrentToken != ')') {
-        mlir::emitError(mlir::UnknownLoc::get(&Context)) << "Group parsing: expected ) after group argument list.";
+        mlir::emitError(getLocation()) << "Group parsing: expected ) after group argument list.";
         return nullptr;
     }
 
     getNextToken();
 
-    return std::make_unique<GroupPrototypeAST>(GroupName, std::move(GroupGenerators));
+    return std::make_unique<GroupPrototypeAST>(GroupName, std::move(GroupGenerators), getLocation());
 } 
 
 std::unique_ptr<ExprAST> Parser::ParseGroup() {
@@ -234,7 +252,7 @@ std::unique_ptr<ExprAST> Parser::ParseGroup() {
 
     std::vector<std::unique_ptr<ExprAST>> Rules;
 
-    if (CurrentToken != '{') return std::make_unique<GroupAST>(std::move(GroupPrototype), std::move(Rules));
+    if (CurrentToken != '{') return std::make_unique<GroupAST>(std::move(GroupPrototype), std::move(Rules), getLocation());
 
     do {
         getNextToken();
@@ -250,7 +268,7 @@ std::unique_ptr<ExprAST> Parser::ParseGroup() {
         return nullptr;
     }
     getNextToken();
-    return std::make_unique<GroupAST>(std::move(GroupPrototype), std::move(Rules));
+    return std::make_unique<GroupAST>(std::move(GroupPrototype), std::move(Rules), getLocation());
 }
 
 std::unique_ptr<ExprAST> Parser::ParseAssign() {
@@ -271,68 +289,38 @@ std::unique_ptr<ExprAST> Parser::ParseAssign() {
         return nullptr;
     }
 
-    return std::make_unique<AssignAST>(std::move(LHS), std::move(RHS));
+    return std::make_unique<AssignAST>(std::move(LHS), std::move(RHS), getLocation());
 }
 
-int Parser::parse() {
-    Context.getOrLoadDialect<mlir::alg::AlgDialect>();
-    Context.getOrLoadDialect<mlir::arith::ArithDialect>();
+std::vector<std::unique_ptr<ExprAST>> Parser::Parse() {
 
-    auto pm = mlir::PassManager::on<mlir::ModuleOp>(&Context);
-    pm.addPass(std::make_unique<AlgLoweringPass>());
+    std::vector<std::unique_ptr<ExprAST>> RootNodeVector;
 
-    MLIRGenImpl Gen(Context);
-
-    mlir::ModuleOp module;
-
-    std::cout << ">>>";
+    // Pre-load the first token.
     getNextToken();
 
     while(true) {
         switch (CurrentToken) {
             case Token::tok_eof:
-                return 0;
+                return std::move(RootNodeVector);
             case ';':
                 getNextToken();
                 break;
-            case '%':
-                if (!module) {
-                    llvm::outs() << "No code to lower.";
-                }
-                if (failed(pm.run(module))) {
-                    llvm::outs() << "Lowering failed.";
-                    return 1;
-                }
-
-                module->print(llvm::outs());
-                return 0;
-                break;
             case Token::tok_def: {
                 auto Definition = ParseGroup();
-                if (Definition) {
-                    Definition->dump();
-
-                    module = Gen.mlirModuleGen(*Definition);
-                    module->print(llvm::outs());
+                if (Definition != NULL) {
+                    RootNodeVector.push_back(std::move(Definition));
                 }
                 break;
             }
             default: {
                 auto Assign = ParseAssign();
-
-                if (Assign) {
-                    Assign->dump();
-
-                    module = Gen.mlirModuleGen(*Assign);
-                    module->print(llvm::outs());
+                if (Assign != NULL) {
+                    RootNodeVector.push_back(std::move(Assign));
                 }
             }
         }
-        fprintf(stderr, ">>> ");
-    }
-    
-
-    return 0;
+    } 
 }
 
 #endif // FRONTEND_PARSER_CPP

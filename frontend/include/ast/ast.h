@@ -1,10 +1,9 @@
 #ifndef FRONTEND_ASH_H
 #define FRONTEND_ASH_H
 
+#include "mlir/IR/Location.h"
 #include <string>
 #include <iostream>
-
-#include "llvm/Support/Casting.h"
 
 class ExprAST {
 public:
@@ -21,9 +20,10 @@ public:
 
 private:
     ExprASTKind Kind;
+    mlir::Location Loc;
 
 public:
-    ExprAST(ExprASTKind Kind) : Kind(Kind) {}
+    ExprAST(ExprASTKind Kind, mlir::Location Loc) : Kind(Kind), Loc(Loc) {}
     virtual ~ExprAST() = default;
     virtual void dump(std::ostream &os = std::cout, unsigned indent = 0) const;
     ExprASTKind getKind() const { return Kind; }
@@ -34,7 +34,7 @@ class NumberExprAST : public ExprAST {
     double Val;
 
 public:
-    NumberExprAST(double Val) : ExprAST(EAK_Number), Val(Val) {}
+    NumberExprAST(double Val, mlir::Location Loc) : ExprAST(EAK_Number, Loc), Val(Val) {}
 
     void dump(std::ostream &os = std::cout, unsigned indent = 0) const override;
     double getVal() const { return Val; }
@@ -48,7 +48,7 @@ class VariableExprAST : public ExprAST {
     std::string Name;
 
 public:
-    VariableExprAST(const std::string &Name) : ExprAST(EAK_Variable), Name(Name) {}
+    VariableExprAST(const std::string &Name, mlir::Location Loc) : ExprAST(EAK_Variable, Loc), Name(Name) {}
 
     void dump(std::ostream &os = std::cout, unsigned indent = 0) const override;
     const std::string &getName() const { return Name; }
@@ -62,7 +62,7 @@ class AssignAST : public ExprAST {
     std::unique_ptr<ExprAST> RHS;
 
 public:
-    AssignAST(std::unique_ptr<VariableExprAST> LHS, std::unique_ptr<ExprAST> RHS): ExprAST(EAK_Assign), LHS(std::move(LHS)), RHS(std::move(RHS)) {}
+    AssignAST(std::unique_ptr<VariableExprAST> LHS, std::unique_ptr<ExprAST> RHS, mlir::Location Loc): ExprAST(EAK_Assign, Loc), LHS(std::move(LHS)), RHS(std::move(RHS)) {}
     void dump(std::ostream &os = std::cout, unsigned indent = 0) const override;
     const VariableExprAST &getLHS() const {return *LHS; }
     const ExprAST &getRHS() const {return *RHS; }
@@ -77,7 +77,7 @@ class BinaryOpAST : public ExprAST {
     std::unique_ptr<ExprAST> LHS, RHS;
 
 public:
-    BinaryOpAST(char Op, std::unique_ptr<ExprAST> LHS, std::unique_ptr<ExprAST> RHS): ExprAST(EAK_BinaryOp), Op(Op), LHS(std::move(LHS)), RHS(std::move(RHS)) {}
+    BinaryOpAST(char Op, std::unique_ptr<ExprAST> LHS, std::unique_ptr<ExprAST> RHS, mlir::Location Loc): ExprAST(EAK_BinaryOp, Loc), Op(Op), LHS(std::move(LHS)), RHS(std::move(RHS)) {}
     void dump(std::ostream &os = std::cout, unsigned indent = 0) const override;
     char getOp() const { return Op; }
     const ExprAST &getLHS() const { return *LHS; }
@@ -92,7 +92,7 @@ class GroupPrototypeAST : public ExprAST {
     std::vector<std::string> Generators;
 
 public:
-    GroupPrototypeAST(const std::string &Name, std::vector<std::string> Generators): ExprAST(EAK_GroupProto), Name(Name), Generators(std::move(Generators)) {}
+    GroupPrototypeAST(const std::string &Name, std::vector<std::string> Generators, mlir::Location Loc): ExprAST(EAK_GroupProto, Loc), Name(Name), Generators(std::move(Generators)) {}
 
     void dump(std::ostream &os = std::cout, unsigned indent = 0) const override;
     const std::string &getName() const { return Name; }
@@ -107,7 +107,7 @@ class GroupAST : public ExprAST {
     std::vector<std::unique_ptr<ExprAST>> Rules;
 
 public:
-    GroupAST(std::unique_ptr<GroupPrototypeAST> Proto, std::vector<std::unique_ptr<ExprAST>> Rules): ExprAST(EAK_Group), Proto(std::move(Proto)), Rules(std::move(Rules)) {}
+    GroupAST(std::unique_ptr<GroupPrototypeAST> Proto, std::vector<std::unique_ptr<ExprAST>> Rules, mlir::Location Loc): ExprAST(EAK_Group, Loc), Proto(std::move(Proto)), Rules(std::move(Rules)) {}
 
     void dump(std::ostream &os = std::cerr, unsigned indent = 0) const override;
     const GroupPrototypeAST &getProto() const { return *Proto; }

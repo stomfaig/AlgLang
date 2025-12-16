@@ -2,10 +2,13 @@
 #define FRONTEND_AST_H
 
 #include <map>
-
+#include <fstream>
+#include <iostream>
 
 #include "ast.h"
+
 #include "mlir/IR/MLIRContext.h"
+#include "mlir/IR/Location.h"
 
 enum Token {
     tok_eof = -1,
@@ -25,17 +28,27 @@ class Parser {
         tok_identifier = -3,
         tok_number=-4,
     };
-
-    mlir::MLIRContext Context;
+    std::map<char, int> BinopPrecedence {
+        {'+', 10},
+        {'-', 10},
+        {'*', 30},
+    };
+    std::ifstream Stream;
     std::string IdentifierStr;
     double NumVal;
-    std::map<char, int> BinopPrecedence;
     int CurrentToken;
+    mlir::MLIRContext &Context;
 
+    std::string File;
+    unsigned int CurrentLine = 1;
+    unsigned int CurrentChar = 0;
      
     int GetTokPrecedence();    
     int gettok();
     int getNextToken();
+
+    char get_next_char();
+    mlir::Location getLocation();
 
     std::unique_ptr<ExprAST> ParseParenExpr();
     std::unique_ptr<VariableExprAST> ParseIdentifierExpr();
@@ -48,14 +61,10 @@ class Parser {
     std::unique_ptr<ExprAST> ParseAssign();
 
 public:
-    Parser(): BinopPrecedence {
-        {'+', 10},
-        {'-', 10},
-        {'*', 30},
-    } {};
+    Parser(mlir::MLIRContext &Context, std::string File): Stream(File), Context(Context), File(File) {};
 
-    int parse();
-    void runOnOperation();
+    /// This method returns a unique_ptr to the AST generated from the source
+    std::vector<std::unique_ptr<ExprAST>> Parse();
 };
 
 #endif // FRONTEND_AST_H

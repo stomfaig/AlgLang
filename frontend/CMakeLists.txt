@@ -7,7 +7,9 @@ target_sources(Compiler
 
 target_link_libraries(Compiler
     PRIVATE
+        Driver
         Parser
+        Codegen
 )
 
 add_subdirectory(lib)

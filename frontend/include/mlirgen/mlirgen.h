@@ -16,24 +16,21 @@
 class MLIRGenImpl {
     
 public:
-
-MLIRGenImpl(mlir::MLIRContext &context);
-
-mlir::ModuleOp mlirModuleGen(const ExprAST &expr);
+    MLIRGenImpl(mlir::MLIRContext &context);
+    mlir::ModuleOp mlirModuleGen(const ExprAST &expr);
 
 private: 
 
 mlir::ModuleOp Module;
 mlir::OpBuilder Builder;
 std::map<std::string, mlir::Value> SymbolTable;
-
-mlir::LogicalResult declare(std::string varname, mlir::Value varval);
-mlir::Value mlirGen(const ExprAST &expr);
-mlir::Value mlirGen(const NumberExprAST &numexpr);
-mlir::Value mlirGen(const VariableExprAST &var);
-mlir::Value mlirGen(const AssignAST &assign);
-mlir::Value mlirGen(const GroupAST &group);
-mlir::Value mlirGen(const BinaryOpAST &binop);
+    mlir::LogicalResult declare(std::string varname, mlir::Value varval);
+    mlir::Value mlirGen(const ExprAST &expr);
+    mlir::Value mlirGen(const NumberExprAST &numexpr);
+    mlir::Value mlirGen(const VariableExprAST &var);
+    mlir::Value mlirGen(const AssignAST &assign);
+    mlir::Value mlirGen(const GroupAST &group);
+    mlir::Value mlirGen(const BinaryOpAST &binop);
 
 };
 
