@@ -85,7 +85,11 @@ mlir::Value MLIRGenImpl::mlirGen(const NumberExprAST &expr) {
 mlir::Value MLIRGenImpl::mlirGen(const VariableExprAST &var) {
     // TODO: implement error logic.
     auto search = SymbolTable.find(var.getName());
-    return search->second;
+    auto Result = search->second;
+    if(!Result) {
+        mlir::emitError(var.getLocation()) << "Use of undeclared identifier '" << var.getName();
+    }
+    return Result;
 }
 
 /// @brief Generates MLIR code for an assign operation, by registering the RHS SSA value into the SymbolTable (this generation might produce MLIR).
