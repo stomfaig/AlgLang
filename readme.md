@@ -1,4 +1,4 @@
-## `AlgLang` as a simple MLIR example
+## `AlgLang` as a symbolic MLIR experiment
 
 `ALgLang` is a DSL, where one can construct and manipulate [Abelian groups](https://en.wikipedia.org/wiki/Abelian_group). `ALgLang` was initially an alternative of the matrix manipulation language used in [Toy](https://mlir.llvm.org/docs/Tutorials/Toy/), but is now more oriented towards exploring the applicability of MLIR in the symbolic computation domain.
 
