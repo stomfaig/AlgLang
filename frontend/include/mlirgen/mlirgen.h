@@ -17,7 +17,10 @@ class MLIRGenImpl {
     
 public:
     MLIRGenImpl(mlir::MLIRContext &context);
-    mlir::ModuleOp mlirModuleGen(const ExprAST &expr);
+    void mlirModuleGen(const ExprAST &expr);
+    void dumpModule() {
+        Module->dump();
+    }
 
 private: 
 

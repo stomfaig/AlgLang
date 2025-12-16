@@ -24,9 +24,8 @@ MLIRGenImpl::MLIRGenImpl(mlir::MLIRContext &context): Builder(&context) {
     Builder.setInsertionPointToStart(Module.getBody());
 }
 
-mlir::ModuleOp MLIRGenImpl::mlirModuleGen(const ExprAST &expr) {
+void MLIRGenImpl::mlirModuleGen(const ExprAST &expr) {
     mlirGen(expr);
-    return Module;
 }
 
 /// @brief Dispatcher method based on the type of node the expression was casted from.
