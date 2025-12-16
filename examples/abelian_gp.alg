@@ -1,4 +1,4 @@
-def G g,h);
+def G(g,h,k);
 
 a = g + h;
 b = h - k;
