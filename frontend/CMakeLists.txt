@@ -10,6 +10,7 @@ target_link_libraries(Compiler
         Driver
         Parser
         Codegen
+        Lower
 )
 
 add_subdirectory(lib)

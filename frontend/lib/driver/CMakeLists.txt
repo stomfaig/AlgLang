@@ -14,10 +14,10 @@ target_sources(Driver
 
 target_link_libraries(Driver
     PRIVATE     
+        Lower
         MLIRAlg
         AST
         Codegen
-        Lower
         Parser
         MLIRIR
         MLIRPass

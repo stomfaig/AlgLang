@@ -19,9 +19,8 @@
 
 #include "ast.h"
 
-MLIRGenImpl::MLIRGenImpl(mlir::MLIRContext &context): Builder(&context) {
-    Module = mlir::ModuleOp::create(Builder.getUnknownLoc());
-    Builder.setInsertionPointToStart(Module.getBody());
+MLIRGenImpl::MLIRGenImpl(mlir::MLIRContext &context): Module(mlir::ModuleOp::create(mlir::UnknownLoc::get(&context))), Builder(&context) {
+    Builder.setInsertionPointToStart(Module->getBody());
 }
 
 void MLIRGenImpl::mlirModuleGen(const ExprAST &expr) {

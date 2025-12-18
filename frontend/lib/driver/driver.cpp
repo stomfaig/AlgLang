@@ -3,21 +3,24 @@
 
 #include "driver.h"
 
+#include "llvm/Support/LogicalResult.h"
+#include "mlir/IR/BuiltinOps.h"
+#include "mlir/IR/MLIRContext.h"
+#include "mlir/Pass/PassManager.h"
+#include "mlir/Dialect/Arith/IR/Arith.h"
+#include "mlir/IR/OwningOpRef.h"
+
+#include "lower.h"
 #include "ast.h"
 #include "mlirgen.h"
 #include "parser.h"
-
-#include "mlir/IR/BuiltinOps.h"
-#include "mlir/IR/MLIRContext.h"
-#include "mlir/IR/PatternMatch.h"
-#include "mlir/Pass/PassManager.h"
-#include "mlir/Dialect/Arith/IR/Arith.h"
 
 
 CompilerOptions CLIParser(int argc, char **argv) {
 
     bool DumpAST = false;
     bool DumpAlg = false;
+    bool DumpLoweredMLIR = false;
     std::string InputFile = "";
     for (int i = 1; i < argc; i++) {
         std::string Elem = argv[i];
@@ -26,19 +29,22 @@ CompilerOptions CLIParser(int argc, char **argv) {
             DumpAST = true;
         } else if (Elem == "--dump-alg") {
             DumpAlg = true;
+        } else if (Elem == "--dump-lowered-mlir") {
+            DumpLoweredMLIR = true;
         } else if (Elem == "--input") {
             InputFile = argv[++i];
         } else {
             // Implicitly, a non-qualified field will be taken as a filename too.
             if (InputFile == "")
                 InputFile = Elem;
-        }
+        } 
     }
 
     return CompilerOptions{
         InputFile,
         DumpAST,
         DumpAlg,
+        DumpLoweredMLIR,
     };        
 }
 
@@ -59,8 +65,7 @@ void AlgDriver::loadDialects() {
 }
 
 void AlgDriver::loadPasses() {
-    // TODO: Based on the params, add passes
-    // pm.addPass(std::make_unique<AlgLoweringPass>());
+    Manager.addPass(std::make_unique<AlgLoweringPass>());
 }
 
 int AlgDriver::run() {
@@ -74,6 +79,14 @@ int AlgDriver::run() {
 
     if (Options.DumpAlg)
         Implementor.dumpModule();
+
+    mlir::OwningOpRef<mlir::ModuleOp> Module = Implementor.getModule();
+
+    // TODO: fix error logging
+    if (llvm::failed(Manager.run(*Module))) ;
+
+    if (Options.DumpLoweredMLIR)
+        Module->dump();
 
     return 0;
 }

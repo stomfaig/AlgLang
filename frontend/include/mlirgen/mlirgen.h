@@ -5,6 +5,7 @@
 #include "mlir/IR/MLIRContext.h"
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinTypes.h"
+#include "mlir/IR/OwningOpRef.h"
 #include "mlir/IR/Verifier.h"
 
 #include "Alg/AlgDialect.h"
@@ -22,9 +23,14 @@ public:
         Module->dump();
     }
 
+    mlir::OwningOpRef<mlir::ModuleOp> getModule() {
+        return std::move(Module);
+    }
+
 private: 
 
-mlir::ModuleOp Module;
+// For the duration of building the module, we keep it in the code generator.
+mlir::OwningOpRef<mlir::ModuleOp> Module;
 mlir::OpBuilder Builder;
 std::map<std::string, mlir::Value> SymbolTable;
     mlir::LogicalResult declare(std::string varname, mlir::Value varval);

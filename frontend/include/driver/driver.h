@@ -1,5 +1,5 @@
-#ifndef ALG_FRONTEND_LOWER_H
-#define ALG_FRONTEND_LOWER_H
+#ifndef ALG_FRONTEND_DRIVER_H
+#define ALG_FRONTEND_DRIVER_H
 
 #include <memory>
 #include <string>
@@ -13,6 +13,7 @@ struct CompilerOptions {
   std::string InputFile;
   bool DumpAST;
   bool DumpAlg;
+  bool DumpLoweredMLIR;
 };
 
 CompilerOptions CLIParser(int argc, char **argv);
@@ -39,4 +40,4 @@ public:
 
 
 
-#endif // ALG_FRONTEND_LOWER_H
+#endif // ALG_FRONTEND_DRIVER_H
