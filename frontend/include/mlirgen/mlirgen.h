@@ -40,7 +40,7 @@ std::map<std::string, mlir::Value> SymbolTable;
     mlir::Value mlirGen(const AssignAST &assign);
     mlir::Value mlirGen(const GroupAST &group);
     mlir::Value mlirGen(const BinaryOpAST &binop);
-
+    mlir::Value mlirGen(const ConstrAST &constraint);
 };
 
 #endif // FRONTEND_MLIRGEN_H

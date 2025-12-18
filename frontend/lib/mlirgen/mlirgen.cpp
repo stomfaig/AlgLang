@@ -201,4 +201,8 @@ mlir::Value MLIRGenImpl::mlirGen(const GroupAST &group) {
     return nullptr;
 }
 
+mlir::Value MLIRGenImpl::mlirGen(const ConstrAST &constraint) {
+    return nullptr;
+}
+
 #endif // FRONTEND_MLIRGEN_CPP
