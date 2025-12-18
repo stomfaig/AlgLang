@@ -2,6 +2,7 @@
 #define FRONTEND_ASH_H
 
 #include "mlir/IR/Location.h"
+#include <memory>
 #include <string>
 #include <iostream>
 
@@ -16,6 +17,7 @@ public:
         EAK_BinaryOp,
         EAK_GroupProto,
         EAK_Group,
+        EAK_Constr,
     };
 
 private:
@@ -115,6 +117,20 @@ public:
     const std::vector<std::unique_ptr<ExprAST>> &getRules() const { return Rules; }
     static bool classof(const ExprAST *Node) {
         return Node->getKind() == EAK_Group;
+    }
+};
+
+class ConstrAST : public ExprAST {
+    std::unique_ptr<ExprAST> LHS, RHS;
+
+public:
+    ConstrAST(std::unique_ptr<ExprAST> LHS, std::unique_ptr<ExprAST> RHS, mlir::Location Loc) : ExprAST(EAK_Constr, Loc), LHS(std::move(LHS)), RHS(std::move(RHS)) {};
+
+    void dump(std::ostream &os = std::cerr, unsigned indent = 0) const override;
+    const ExprAST &getRHS() const { return *RHS; }
+    const ExprAST &getLHS() const { return *LHS; }
+    static bool classof(const ExprAST *Node) {
+        return Node->getKind() == EAK_Constr;
     }
 };
 

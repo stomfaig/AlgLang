@@ -47,4 +47,10 @@ void GroupAST::dump(std::ostream &os, unsigned indent) const {
     }
 }
 
+void ConstrAST::dump(std::ostream &os, unsigned indent) const {
+    os << std::string(indent, ' ') << "Constraint\n";
+    if (LHS) LHS->dump(os, indent + 2);
+    if (RHS) RHS->dump(os, indent + 2);
+}
+
 #endif // FRONTEND_AST_CPP

@@ -18,6 +18,8 @@ enum Token {
 
     tok_identifier = -3,
     tok_number = -4,
+
+    tok_constr=-5,
 };
 
 class Parser {
@@ -25,8 +27,11 @@ class Parser {
     enum Token {
         tok_eof = -1,
         tok_def = -2,
+        
         tok_identifier = -3,
         tok_number=-4,
+        
+        tok_constr=-5,
     };
     std::map<char, int> BinopPrecedence {
         {'+', 10},
@@ -57,6 +62,7 @@ class Parser {
     std::unique_ptr<ExprAST> ParseExpression();
     std::unique_ptr<GroupPrototypeAST>ParseGroupPrototype();
     std::unique_ptr<ExprAST> ParseGroup();
+    std::unique_ptr<ExprAST> ParseConstraint();
     std::unique_ptr<ExprAST> ParsePrimary();
     std::unique_ptr<ExprAST> ParseAssign();
 

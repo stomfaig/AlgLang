@@ -191,7 +191,7 @@ mlir::Value MLIRGenImpl::mlirGen(const GroupAST &group) {
 
         // TODO: add error handling if the registration fails
         if (failed(declare(GeneratorName, result))) {
-            std::cerr << "Variable declaration failed for variable " << GeneratorName;
+            std::cerr << "Variable declaration failed for variable " << GeneratorName << "\n";
         }
 
         idx++;

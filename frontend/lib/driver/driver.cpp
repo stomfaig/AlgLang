@@ -33,11 +33,7 @@ CompilerOptions CLIParser(int argc, char **argv) {
             DumpLoweredMLIR = true;
         } else if (Elem == "--input") {
             InputFile = argv[++i];
-        } else {
-            // Implicitly, a non-qualified field will be taken as a filename too.
-            if (InputFile == "")
-                InputFile = Elem;
-        } 
+        }
     }
 
     return CompilerOptions{
@@ -72,21 +68,30 @@ int AlgDriver::run() {
     auto AST = Parser.Parse();
     
     for (const std::unique_ptr<ExprAST> &root : AST) {
-        if (Options.DumpAST)
+        if (Options.DumpAST) {
             root->dump();
-        Implementor.mlirModuleGen(*root);
+        } else {
+            Implementor.mlirModuleGen(*root);
+        }
     }
 
-    if (Options.DumpAlg)
+    if (Options.DumpAST)
+        return 0;
+
+    if (Options.DumpAlg) {
         Implementor.dumpModule();
+        return 0;
+    }
 
     mlir::OwningOpRef<mlir::ModuleOp> Module = Implementor.getModule();
 
     // TODO: fix error logging
     if (llvm::failed(Manager.run(*Module))) ;
 
-    if (Options.DumpLoweredMLIR)
+    if (Options.DumpLoweredMLIR) {
         Module->dump();
+        return 0;
+    }   
 
     return 0;
 }

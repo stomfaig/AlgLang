@@ -1,12 +1,15 @@
 #ifndef FRONTEND_PARSER_CPP
 #define FRONTEND_PARSER_CPP
 
+#include <cstddef>
 #include <memory>
 #include <string>
 #include <iostream>
+#include <utility>
 #include <vector>
 
 #include "mlir/IR/BuiltinOps.h"
+#include "mlir/IR/Diagnostics.h"
 #include "mlir/IR/Location.h"
 #include "mlir/IR/MLIRContext.h"
 #include "mlir/Pass/PassManager.h"
@@ -60,6 +63,8 @@ int Parser::gettok() {
         // Check if we have read a command
         if (IdentifierStr == "def")
             return Token::tok_def;
+        if (IdentifierStr == "constr")
+            return Token::tok_constr;
         else
             return Token::tok_identifier;
     }
@@ -271,6 +276,41 @@ std::unique_ptr<ExprAST> Parser::ParseGroup() {
     return std::make_unique<GroupAST>(std::move(GroupPrototype), std::move(Rules), getLocation());
 }
 
+/// Constraints are of the form
+///
+/// `constr <expr> = <expr>`
+///
+/// With the expectation that both expressions belong to the
+/// same group.
+std::unique_ptr<ExprAST> Parser::ParseConstraint() {
+    
+    if (CurrentToken != Token::tok_constr) {
+        // TODO: we need an unreachable error here.
+    }
+
+    getNextToken(); 
+
+    std::unique_ptr<VariableExprAST> LHS = ParseIdentifierExpr();
+
+    if (LHS == NULL) {
+        mlir::emitError(getLocation()) << "Failed to parse LHS of constr.";
+    }
+
+    if (CurrentToken != '=') {
+        mlir::emitError(getLocation()) << "Expected `=` in constr, found `" << CurrentToken << "`";
+    }
+
+    getNextToken(); 
+
+    std::unique_ptr<VariableExprAST> RHS = ParseIdentifierExpr();
+
+    if (RHS == NULL) {
+        mlir::emitError(getLocation()) << "Failed to parse RHS of constr.";
+    }
+
+    return std::make_unique<ConstrAST>(std::move(LHS), std::move(RHS), getLocation());
+}
+
 std::unique_ptr<ExprAST> Parser::ParseAssign() {
 
     std::unique_ptr<VariableExprAST> LHS = ParseIdentifierExpr();
@@ -310,6 +350,13 @@ std::vector<std::unique_ptr<ExprAST>> Parser::Parse() {
                 auto Definition = ParseGroup();
                 if (Definition != NULL) {
                     RootNodeVector.push_back(std::move(Definition));
+                }
+                break;
+            }
+            case Token::tok_constr: {
+                auto Constraint = ParseConstraint();
+                if (Constraint != NULL) {
+                    RootNodeVector.push_back(std::move(Constraint));
                 }
                 break;
             }
