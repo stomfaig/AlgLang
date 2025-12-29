@@ -197,12 +197,18 @@ mlir::Value MLIRGenImpl::mlirGen(const GroupAST &group) {
         idx++;
     }
 
-    // return a vector of all the emitted values.
+    for (auto &constr : group.getRules()) {
+        auto constr_value = mlirGen(*constr);
+
+        mlir::alg::UnaryConstrOp::create(Builder, group.getLocation(), constr_value);
+    }
+
+    // FIXME: maybe(?) return a vector of all the emitted values.
     return nullptr;
 }
 
 mlir::Value MLIRGenImpl::mlirGen(const ConstrAST &constraint) {
-    return nullptr;
+    
 }
 
 #endif // FRONTEND_MLIRGEN_CPP

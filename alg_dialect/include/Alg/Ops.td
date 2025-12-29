@@ -121,3 +121,14 @@ def UnaryNeg : Alg_Op<"un_neg"> {
         Alg_Element:$result
     );
 }
+
+def UnaryConstrOp : Alg_Op<"constr"> {
+    let summary = "Introduces constraints on group elements";
+
+    let description = [{
+        Introduces constraints on group elements. From that point on,
+        the constraint will be uses for any further simplifications.
+    }];
+
+    let arguments = (ins Alg_Element:$elem);
+}
