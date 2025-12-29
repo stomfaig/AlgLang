@@ -19,6 +19,7 @@ target_link_libraries(Driver
         AST
         Codegen
         Parser
+        ConstraintResolution
         MLIRIR
         MLIRPass
         MLIRTransforms

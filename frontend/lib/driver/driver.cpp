@@ -14,6 +14,7 @@
 #include "ast.h"
 #include "mlirgen.h"
 #include "parser.h"
+#include "constraint_resolution.h"
 
 
 CompilerOptions CLIParser(int argc, char **argv) {
@@ -61,7 +62,8 @@ void AlgDriver::loadDialects() {
 }
 
 void AlgDriver::loadPasses() {
-    Manager.addPass(std::make_unique<AlgLoweringPass>());
+    Manager.addPass(std::make_unique<ConstrResPass>());
+    //Manager.addPass(std::make_unique<AlgLoweringPass>());
 }
 
 int AlgDriver::run() {
