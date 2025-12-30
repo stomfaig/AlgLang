@@ -88,11 +88,11 @@ void ConstrResPass::runOnOperation() {
                 auto gp_attr = op_type.getGroup();
                 auto group_name = gp_attr.getName().str();
                 
-                if (!constraint_tables.count(group_name))
-                    constraint_tables.insert({group_name, std::make_unique<ConstraintTable>(vec.size())});
-
                 auto constr_expr_op = c.getElem().getDefiningOp();
                 auto vec = getExprValue(*constr_expr_op);
+
+                if (!constraint_tables.count(group_name))
+                    constraint_tables.insert({group_name, std::make_unique<ConstraintTable>(vec.size())});
 
                 auto search = constraint_tables.find(group_name);
                 auto &table = search->second;
