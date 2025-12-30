@@ -3,8 +3,30 @@
 
 #include "mlir/IR/Location.h"
 #include <memory>
+#include <optional>
 #include <string>
 #include <iostream>
+
+class NumberExprAST;
+class VariableExprAST;
+class AssignAST;
+class BinaryOpAST;
+class GroupPrototypeAST;
+class GroupAST;
+class ConstrAST;
+
+class ASTVisitor {
+public:
+    virtual ~ASTVisitor() = default;
+
+    virtual void visit(NumberExprAST&);
+    virtual void visit(VariableExprAST&);
+    virtual void visit(AssignAST&);
+    virtual void visit(BinaryOpAST&);
+    virtual void visit(GroupPrototypeAST&);
+    virtual void visit(GroupAST&);
+    virtual void visit(ConstrAST&);
+};
 
 class ExprAST {
 public:
@@ -30,6 +52,7 @@ public:
     virtual void dump(std::ostream &os = std::cout, unsigned indent = 0) const;
     ExprASTKind getKind() const { return Kind; }
     mlir::Location getLocation() const { return Loc; }
+    virtual void accept(ASTVisitor&) = 0;
 };
 
 
@@ -44,20 +67,24 @@ public:
     static bool classof(const ExprAST *Node) {
         return Node->getKind() == EAK_Number;
     }
+    void accept(ASTVisitor &v) override {v.visit(*this); }
 };
 
 
 class VariableExprAST : public ExprAST {
     std::string Name;
+    std::optional<std::string> GroupName;
 
 public:
     VariableExprAST(const std::string &Name, mlir::Location Loc) : ExprAST(EAK_Variable, Loc), Name(Name) {}
 
     void dump(std::ostream &os = std::cout, unsigned indent = 0) const override;
     const std::string &getName() const { return Name; }
+    // Will need a getter.
     static bool classof(const ExprAST *Node) {
         return Node->getKind() == EAK_Variable;
     }
+    void accept(ASTVisitor &v) override {v.visit(*this); }
 };
 
 class AssignAST : public ExprAST {
@@ -72,6 +99,7 @@ public:
     static bool classof(const ExprAST *Node) {
         return Node->getKind() == EAK_Assign;
     }
+    void accept(ASTVisitor &v) override {v.visit(*this); }
 };
 
 
@@ -88,6 +116,7 @@ public:
     static bool classof(const ExprAST *Node) {
         return Node->getKind() == EAK_BinaryOp;
     }
+    void accept(ASTVisitor &v) override {v.visit(*this); }
 };
 
 class GroupPrototypeAST : public ExprAST {
@@ -103,6 +132,7 @@ public:
     static bool classof(const ExprAST *Node) {
         return Node->getKind() == EAK_GroupProto;
     }
+    void accept(ASTVisitor &v) override {v.visit(*this); }
 };
 
 class GroupAST : public ExprAST {
@@ -118,6 +148,7 @@ public:
     static bool classof(const ExprAST *Node) {
         return Node->getKind() == EAK_Group;
     }
+    void accept(ASTVisitor &v) override {v.visit(*this); }
 };
 
 class ConstrAST : public ExprAST {
@@ -132,6 +163,7 @@ public:
     static bool classof(const ExprAST *Node) {
         return Node->getKind() == EAK_Constr;
     }
+    void accept(ASTVisitor &v) override {v.visit(*this); }
 };
 
 #endif // FRONTEND_ASH_H
