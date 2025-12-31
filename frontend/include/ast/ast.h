@@ -6,6 +6,8 @@
 #include <optional>
 #include <string>
 #include <iostream>
+#include <map>
+#include <vector>
 
 class NumberExprAST;
 class VariableExprAST;
@@ -19,13 +21,13 @@ class ASTVisitor {
 public:
     virtual ~ASTVisitor() = default;
 
-    virtual void visit(NumberExprAST&);
-    virtual void visit(VariableExprAST&);
-    virtual void visit(AssignAST&);
-    virtual void visit(BinaryOpAST&);
-    virtual void visit(GroupPrototypeAST&);
-    virtual void visit(GroupAST&);
-    virtual void visit(ConstrAST&);
+    virtual void visit(const NumberExprAST&) {};
+    virtual void visit(const VariableExprAST&) {};
+    virtual void visit(const AssignAST&) {};
+    virtual void visit(const BinaryOpAST&) {};
+    virtual void visit(const GroupPrototypeAST&) {};
+    virtual void visit(const GroupAST&) {};
+    virtual void visit(const ConstrAST&) {};
 };
 
 class ExprAST {
@@ -52,7 +54,7 @@ public:
     virtual void dump(std::ostream &os = std::cout, unsigned indent = 0) const;
     ExprASTKind getKind() const { return Kind; }
     mlir::Location getLocation() const { return Loc; }
-    virtual void accept(ASTVisitor&) = 0;
+    virtual void accept(ASTVisitor&) const = 0;
 };
 
 
@@ -67,7 +69,7 @@ public:
     static bool classof(const ExprAST *Node) {
         return Node->getKind() == EAK_Number;
     }
-    void accept(ASTVisitor &v) override {v.visit(*this); }
+    void accept(ASTVisitor &v) const override {v.visit(*this); }
 };
 
 
@@ -84,7 +86,7 @@ public:
     static bool classof(const ExprAST *Node) {
         return Node->getKind() == EAK_Variable;
     }
-    void accept(ASTVisitor &v) override {v.visit(*this); }
+    void accept(ASTVisitor &v) const override {v.visit(*this); }
 };
 
 class AssignAST : public ExprAST {
@@ -99,7 +101,7 @@ public:
     static bool classof(const ExprAST *Node) {
         return Node->getKind() == EAK_Assign;
     }
-    void accept(ASTVisitor &v) override {v.visit(*this); }
+    void accept(ASTVisitor &v) const override {v.visit(*this); }
 };
 
 
@@ -116,7 +118,7 @@ public:
     static bool classof(const ExprAST *Node) {
         return Node->getKind() == EAK_BinaryOp;
     }
-    void accept(ASTVisitor &v) override {v.visit(*this); }
+    void accept(ASTVisitor &v) const override {v.visit(*this); }
 };
 
 class GroupPrototypeAST : public ExprAST {
@@ -132,7 +134,7 @@ public:
     static bool classof(const ExprAST *Node) {
         return Node->getKind() == EAK_GroupProto;
     }
-    void accept(ASTVisitor &v) override {v.visit(*this); }
+    void accept(ASTVisitor &v) const override {v.visit(*this); }
 };
 
 class GroupAST : public ExprAST {
@@ -148,7 +150,7 @@ public:
     static bool classof(const ExprAST *Node) {
         return Node->getKind() == EAK_Group;
     }
-    void accept(ASTVisitor &v) override {v.visit(*this); }
+    void accept(ASTVisitor &v) const override {v.visit(*this); }
 };
 
 class ConstrAST : public ExprAST {
@@ -163,7 +165,20 @@ public:
     static bool classof(const ExprAST *Node) {
         return Node->getKind() == EAK_Constr;
     }
-    void accept(ASTVisitor &v) override {v.visit(*this); }
+    void accept(ASTVisitor &v) const override { v.visit(*this); }
+};
+
+
+class Program {
+    std::vector<std::unique_ptr<ExprAST>> TopLevelNodes;
+    std::map<const VariableExprAST*, std::string> VariableGroups;
+public:
+    Program(std::vector<std::unique_ptr<ExprAST>> nodes) : TopLevelNodes(std::move(nodes)) {};
+    const std::vector<std::unique_ptr<ExprAST>> &getTopLevelNodes() const {return TopLevelNodes; }
+    void setVariableGroups(std::map<const VariableExprAST*, std::string> vg) {
+        VariableGroups = std::map<const VariableExprAST*, std::string>(vg);
+    }
+    const std::map<const VariableExprAST*, std::string> getVariableGroups() const { return VariableGroups; }
 };
 
 #endif // FRONTEND_ASH_H
