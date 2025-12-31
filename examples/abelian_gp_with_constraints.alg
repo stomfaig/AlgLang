@@ -3,9 +3,7 @@ def G(g, h, k) {
     h - k
 }
 
-def H(g, s, t);
-
-a = g + h;
-b = h - k;
-c = g + s;
-h = s - t;
+def H(g, s, t) {
+    g - s,
+    s + t,
+}
