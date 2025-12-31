@@ -1,6 +1,7 @@
 #ifndef FRONTEND_MLIRGEN_CPP
 #define FRONTEND_MLIRGEN_CPP
 
+#include <algorithm>
 #include <map>
 
 #include "mlirgen.h"
@@ -56,10 +57,10 @@ mlir::Value MLIRGenImpl::mlirGen(const ExprAST &expr) {
 /// @param varname Name of the variable to be the SymbolTable key.
 /// @param varval MLIR Value to be associated with the variable name.
 /// @return mlir::LogicalValue depending on whether there was already an item with the given key in the SymbolTable or not.
-mlir::LogicalResult MLIRGenImpl::declare(std::string varname, mlir::Value varval) {
-    if (SymbolTable.count(varname))
+mlir::LogicalResult MLIRGenImpl::declare(std::string groupname, std::string varname, mlir::Value varval) {
+    if (SymbolTable.count({groupname, varname}))
         return mlir::failure();
-    SymbolTable.insert({varname, varval});
+    SymbolTable.insert({{groupname, varname}, varval});
     return mlir::success();
 }
 
@@ -82,7 +83,8 @@ mlir::Value MLIRGenImpl::mlirGen(const NumberExprAST &expr) {
 /// @return Retrieved SSA val.
 mlir::Value MLIRGenImpl::mlirGen(const VariableExprAST &var) {
     // TODO: implement error logic.
-    auto search = SymbolTable.find(var.getName());
+    auto groupname = VariableGroups.at(&var);
+    auto search = SymbolTable.find({groupname, var.getName()});
     auto Result = search->second;
     if(!Result) {
         mlir::emitError(var.getLocation()) << "Use of undeclared identifier '" << var.getName();
@@ -97,7 +99,10 @@ mlir::Value MLIRGenImpl::mlirGen(const AssignAST &assign) {
 
     mlir::Value Val = mlirGen(assign.getRHS());
 
-    if (failed(declare(assign.getLHS().getName(), Val))) {
+    auto t = dyn_cast<mlir::alg::ElementType>(Val.getType());
+    auto groupname = t.getGroup().getName().str();
+    
+    if (failed(declare(groupname, assign.getLHS().getName(), Val))) {
         return nullptr;
     }
 
@@ -190,7 +195,7 @@ mlir::Value MLIRGenImpl::mlirGen(const GroupAST &group) {
         auto result = CreateOp.getResult();
 
         // TODO: add error handling if the registration fails
-        if (failed(declare(GeneratorName, result))) {
+        if (failed(declare(group.getProto().getName(), GeneratorName, result))) {
             std::cerr << "Variable declaration failed for variable " << GeneratorName << "\n";
         }
 
@@ -209,6 +214,14 @@ mlir::Value MLIRGenImpl::mlirGen(const GroupAST &group) {
 
 mlir::Value MLIRGenImpl::mlirGen(const ConstrAST &constraint) {
     
+}
+
+void MLIRGenImpl::mlirGen(Program &program) {
+    VariableGroups = std::map<const VariableExprAST*, std::string>(program.getVariableGroups());
+
+    for (auto &root : program.getTopLevelNodes()) {
+        mlirGen(*root);
+    }
 }
 
 #endif // FRONTEND_MLIRGEN_CPP

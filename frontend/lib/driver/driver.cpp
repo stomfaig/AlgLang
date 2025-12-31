@@ -4,6 +4,7 @@
 #include "driver.h"
 
 #include "llvm/Support/LogicalResult.h"
+#include <type_traits>
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/IR/MLIRContext.h"
 #include "mlir/Pass/PassManager.h"
@@ -73,13 +74,13 @@ int AlgDriver::run() {
     for (const std::unique_ptr<ExprAST> &root : AST.getTopLevelNodes()) {
         if (Options.DumpAST) {
             root->dump();
-        } else {
-            Implementor.mlirModuleGen(*root);
         }
     }
 
     auto ast_pass =  GroupResolutionPass();
     ast_pass.run(AST);
+
+    Implementor.mlirGen(AST);
 
     if (Options.DumpAST)
         return 0;
