@@ -69,7 +69,7 @@ void AlgDriver::loadPasses() {
 int AlgDriver::run() {
     auto AST = Parser.Parse();
     
-    for (const std::unique_ptr<ExprAST> &root : AST) {
+    for (const std::unique_ptr<ExprAST> &root : AST.getTopLevelNodes()) {
         if (Options.DumpAST) {
             root->dump();
         } else {

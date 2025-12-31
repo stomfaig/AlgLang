@@ -332,7 +332,7 @@ std::unique_ptr<ExprAST> Parser::ParseAssign() {
     return std::make_unique<AssignAST>(std::move(LHS), std::move(RHS), getLocation());
 }
 
-std::vector<std::unique_ptr<ExprAST>> Parser::Parse() {
+Program Parser::Parse() {
 
     std::vector<std::unique_ptr<ExprAST>> RootNodeVector;
 
@@ -368,6 +368,8 @@ std::vector<std::unique_ptr<ExprAST>> Parser::Parse() {
             }
         }
     } 
+
+    return Program(std::move(RootNodeVector));
 }
 
 #endif // FRONTEND_PARSER_CPP

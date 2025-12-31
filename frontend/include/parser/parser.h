@@ -70,7 +70,7 @@ public:
     Parser(mlir::MLIRContext &Context, std::string File): Stream(File), Context(Context), File(File) {};
 
     /// This method returns a unique_ptr to the AST generated from the source
-    std::vector<std::unique_ptr<ExprAST>> Parse();
+    Program Parse();
 };
 
 #endif // FRONTEND_AST_H
