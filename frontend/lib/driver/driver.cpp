@@ -15,6 +15,7 @@
 #include "mlirgen.h"
 #include "parser.h"
 #include "constraint_resolution.h"
+#include "passes/group_resolution_pass.h"
 
 
 CompilerOptions CLIParser(int argc, char **argv) {
@@ -76,6 +77,9 @@ int AlgDriver::run() {
             Implementor.mlirModuleGen(*root);
         }
     }
+
+    auto ast_pass =  GroupResolutionPass();
+    ast_pass.run(AST);
 
     if (Options.DumpAST)
         return 0;
