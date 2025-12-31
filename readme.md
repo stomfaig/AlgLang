@@ -38,7 +38,17 @@ def G(g);
 k = 4 * g;
 ```
 
-Here, the fact that `k` is also an element of the group `G` is automatically inferred, since `g` is a member of `G`. 
+Here, the fact that `k` is also an element of the group `G` is automatically inferred, since `g` is a member of `G`. Until the possibility to add typing to expressions is introduced, each expression must be written so that its type is unambigously inferrable. E.g.:
+```AlgLang
+def G(g, h, k);
+def H(g, r, s);
+
+a = h + k; // Ok, since both `h` and `k` only make sense in `G`
+r = g + h; // OK, since this statement only makes sense if `g`
+  // refers to an element of `G`
+c = g + r; // OK, by the same reason
+// c = g + r // NOT OK, since this make sense in both `G` and `H`
+```
 
 ### Quickstart
 
