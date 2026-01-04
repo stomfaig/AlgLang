@@ -1,4 +1,5 @@
 #include <cstddef>
+#include <memory>
 #include <vector>
 
 
@@ -8,40 +9,16 @@ class AlgVec {
 public:
     explicit AlgVec(size_t n) : data(n) {}
 
-    AlgVec& operator+=(const AlgVec& rhs) {
-        if (size() != rhs.size()) {
-            // TODO: report error
-        }
-
-        for (size_t i = 0; i < size(); i++) {
-            data[i] += rhs[i];
-        }
-
-        return *this;
-    }
-
-    AlgVec operator -=(const AlgVec& rhs) {
-        if (size() != rhs.size()) {
-            // TODO: report error
-        }
-
-        for (size_t i = 0; i < size(); i++) {
-            data[i] -= rhs[i];
-        }
-
-        return *this;
-    }
-
-    AlgVec& operator*=(const int rhs) {
-        for (size_t i = 0; i < size(); i++) {
-            data[i] *= rhs;
-        }
-
-        return *this;
-    }
-
     size_t size() const { return data.size(); }
+    bool is_zero();
 
+    AlgVec& operator+=(const AlgVec& rhs);
+    AlgVec operator -=(const AlgVec& rhs);
+    AlgVec& operator*=(const int rhs);
+    bool operator==(const AlgVec& rhs);
+    bool operator!=(const AlgVec& rhs) {
+        return !(*this == rhs);
+    }
     int& operator[](size_t i) { return data[i]; }
     const int& operator[](size_t i) const { return data[i]; }
 
@@ -60,6 +37,8 @@ struct Constraint {
     int NumToReduce;
     AlgVec Result;
 
+    static Constraint from_vec(AlgVec);
+
     void dump();
 };
 
@@ -77,11 +56,15 @@ public:
     /// (b) if the simplified expressions is not trivial, adds it to `Constraints`
     /// E.g., given `constr a = b;`, we call `introduceConstraint(a-b)`.
     /// TODO: maybe return a success / failure value
-    void introduceConstraint(const AlgVec&);
+    void introduceConstraint(AlgVec);
     /// Given an element (in vector form), this method returns a 
     /// simplified version of the element using the constraints
     /// stored in this objects.
-    AlgVec reduceElement(const AlgVec&);
+    AlgVec reduceElement(AlgVec);
+
+    /// This method internally simplifies all the stored constraints
+    /// to their simplest form
+    void simplify();
 
     void dump();
 };
