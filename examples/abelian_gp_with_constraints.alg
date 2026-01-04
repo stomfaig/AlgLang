@@ -5,5 +5,10 @@ def G(g, h, k) {
 
 def H(g, s, t) {
     g - s,
-    s + t,
+    s + t
+}
+
+def K(a, b, c) {
+    a + b + c,
+    a + b
 }
