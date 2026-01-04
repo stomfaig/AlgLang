@@ -118,4 +118,26 @@ void GroupResolutionPass::run(Program &program) {
     program.setVariableGroups(VariableGroups);
 }
 
+void GroupResolutionPass::dump() {
+    std::cout << "Variable compatibility table" << std::endl;
+    for (auto pair : VarCompatibleGroups) {
+        std::cout << "Compatible groups with " << pair.first << ":\n\t";
+        for (auto second : pair.second) {
+            std::cout << second << " ";
+        } 
+        std::cout << std::endl;
+    }
+
+    std::cout << std::endl << "Assignment table:" << std::endl;
+    for (auto pair : VariableGroups) {
+        std::cout << pair.first->getName() << " : " << pair.second << std::endl;
+    }
+
+    std::cout << "Compatible groups:" << std::endl;
+    for (auto gp : CompatibleGroups) {
+        std::cout << gp << " ";
+    }
+    std::cout << std::endl;
+}
+
 #endif // FRONTEND_AST_GROUP_RESOLUTION_PASS_CPP

@@ -45,6 +45,8 @@ public:
     void visit(const ConstrAST&) override;
 
     void run(Program &program);
+
+    void dump();
 };
 
 #endif // FRONTEND_AST_GROUP_RESOLUTION_PASS_H
