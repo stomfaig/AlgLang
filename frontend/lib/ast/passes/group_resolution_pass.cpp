@@ -27,26 +27,15 @@ void GroupResolutionPass::topLevelSetdown() {
         VariableGroups.insert({node, GroupName});
         addCompatibleGroup(node->getName(), GroupName);
     }
+}
 
-    /*std::cout << "Variable compatibility table" << std::endl;
-    for (auto pair : VarCompatibleGroups) {
-        std::cout << "Compatible groups with " << pair.first << ":\n\t";
-        for (auto second : pair.second) {
-            std::cout << second << " ";
-        } 
-        std::cout << std::endl;
-    }
+void GroupResolutionPass::topLevelAssign(std::string Group) {
+    auto GroupName = *CompatibleGroups.begin();
 
-    std::cout << std::endl << "Assignment table:" << std::endl;
-    for (auto pair : VariableGroups) {
-        std::cout << pair.first->getName() << " : " << pair.second << std::endl;
+    for (auto node : CurrentAssigns) {
+        VariableGroups.insert({node, GroupName});
+        addCompatibleGroup(node->getName(), GroupName);
     }
-
-    std::cout << "Compatible groups:" << std::endl;
-    for (auto gp : CompatibleGroups) {
-        std::cout << gp << " ";
-    }
-    std::cout << std::endl;*/
 }
 
 void GroupResolutionPass::addCompatibleGroup(std::string varname, std::string groupname) {
@@ -91,9 +80,14 @@ void GroupResolutionPass::visit(const BinaryOpAST& node) {
 }
 
 void GroupResolutionPass::visit(const GroupAST& node) {
-    // Here we should assign the current group to each parent
-
     node.getProto().accept(*this);
+
+    topLevelSetup();
+    for (const auto &rule : node.getRules()) {
+        rule->accept(*this);
+    }
+
+    topLevelAssign(node.getProto().getName());
 }
 
 void GroupResolutionPass::visit(const GroupPrototypeAST& node) {

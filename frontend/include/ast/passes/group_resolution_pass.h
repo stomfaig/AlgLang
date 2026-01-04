@@ -32,6 +32,11 @@ private:
     /// This function, for each node in CurrentAssigns, marks the
     /// node with the inferred group, or reports failure. 
     void topLevelSetdown();
+    /// This function is an alternative to `topLevelSetdown()`,
+    /// where the assigned group is not inferred from the definitions,
+    /// but is simply specified by the setdown
+    /// TODO: Streamline the interface of the top-level methods
+    void topLevelAssign(std::string Group);
     /// Method for introducing a new group that a given
     /// name is compatible with.
     void addCompatibleGroup(std::string varname, std::string groupname);
